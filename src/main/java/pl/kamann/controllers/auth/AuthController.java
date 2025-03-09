@@ -48,6 +48,16 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerInstructor(request));
     }
 
+    @PostMapping("/resend-confirmation")
+    @Operation(
+            summary = "Resend account confirmation email",
+            description = "Generates a new confirmation token and resends the activation email if the user account is not yet confirmed."
+    )
+    public ResponseEntity<String> resendConfirmationEmail(@RequestParam String email) {
+        confirmUserService.resendConfirmationEmail(email);
+        return ResponseEntity.ok("New confirmation email has been sent.");
+    }
+
     @GetMapping("/confirm")
     @Operation(
             summary = "Confirm a user account",

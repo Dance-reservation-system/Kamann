@@ -182,7 +182,7 @@ class AuthServiceTest {
                 .firstName(savedUser.getFirstName())
                 .lastName(savedUser.getLastName())
                 .phone(savedUser.getPhone())
-                .status(savedAuthUser.getStatus())
+                .status(savedAuthUser.getStatus().name())
                 .build();
 
         when(roleRepository.findByName("CLIENT")).thenReturn(Optional.of(clientRole));

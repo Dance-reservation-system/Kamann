@@ -108,6 +108,13 @@ public class ConfirmUserServiceTest {
         verify(emailSender).sendEmail(eq(testAuthUser.getEmail()), anyString(), any(), eq("registration"));
     }
 
+    @Test
+    void shouldResendConfirmationEmail() throws MessagingException {
+        confirmUserService.resendConfirmationEmail(testAuthUser.getEmail());
+
+        verify(emailSender).sendEmail(eq(testAuthUser.getEmail()), anyString(), any(), eq("registration"));
+    }
+
     private String generateInvalidJwtToken() {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() - 10000); // Expired token

@@ -115,7 +115,7 @@ class AppUserServiceTest {
                         appUser.getFirstName(),
                         appUser.getLastName(),
                         appUser.getAuthUser().getEmail(),
-                        appUser.getAuthUser().getStatus(),
+                        appUser.getAuthUser().getStatus().name(),
                         appUser.getAuthUser().getRoles().stream().findFirst().map(Role::getName).orElse(null)
                 ))
                 .toList();
@@ -159,7 +159,7 @@ class AppUserServiceTest {
         authUser.setAppUser(user);
 
         when(entityLookupService.findUserById(userId)).thenReturn(user);
-        var userDto = new AppUserDto(userId, authUser.getEmail(), user.getFirstName(), user.getLastName(), authUser.getStatus(), user.getPhone());
+        var userDto = new AppUserDto(userId, authUser.getEmail(), user.getFirstName(), user.getLastName(), authUser.getStatus().name(), user.getPhone());
         when(appUserMapper.toAppUserDto(user)).thenReturn(userDto);
 
         var result = appUserService.getUserById(userId);
@@ -200,7 +200,7 @@ class AppUserServiceTest {
             return savedUser;
         });
 
-        var expectedUserDto = new AppUserDto(1L, request.email(), request.firstName(), request.lastName(), AuthUserStatus.ACTIVE, request.phone());
+        var expectedUserDto = new AppUserDto(1L, request.email(), request.firstName(), request.lastName(), AuthUserStatus.ACTIVE.name(), request.phone());
         when(appUserMapper.toAppUserDto(any(AppUser.class))).thenReturn(expectedUserDto);
 
         var result = appUserService.createUser(request, "CLIENT");
