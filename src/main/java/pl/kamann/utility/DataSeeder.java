@@ -1,10 +1,11 @@
 package pl.kamann.utility;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.AuthUserStatus;
@@ -22,50 +23,26 @@ import pl.kamann.services.admin.AdminEventService;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@Component
+@Service
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.dataseed.enabled", havingValue = "true", matchIfMissing = true)
 public class DataSeeder {
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private EntityLookupService lookupService;
-
-    @Autowired
-    private EventMapper eventMapper;
-
-    @Autowired
-    private AppUserRepository appUserRepository;
-
-    @Autowired
-    private AuthUserRepository authUserRepository;
-
-    @Autowired
-    private EventTypeRepository eventTypeRepository;
-
-    @Autowired
-    private EventRepository eventRepository;
-
-    @Autowired
-    private MembershipCardRepository membershipCardRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private OccurrenceEventRepository occurrenceEventRepository;
-
-    @Autowired
-    private EventValidationService eventCreateValidationService;
-
-    @Autowired
-    private AttendanceRepository attendanceRepository;
-
-    @Autowired
-    private AdminEventService adminEventService;
+    private final RoleRepository roleRepository;
+    private final EntityLookupService lookupService;
+    private final EventMapper eventMapper;
+    private final AppUserRepository appUserRepository;
+    private final AuthUserRepository authUserRepository;
+    private final EventTypeRepository eventTypeRepository;
+    private final EventRepository eventRepository;
+    private final MembershipCardRepository membershipCardRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final OccurrenceEventRepository occurrenceEventRepository;
+    private final EventValidationService eventCreateValidationService;
+    private final AttendanceRepository attendanceRepository;
+    private final AdminEventService adminEventService;
 
     Role adminRole = new Role("ADMIN");
     Role instructorRole = new Role("INSTRUCTOR");
@@ -77,6 +54,7 @@ public class DataSeeder {
     AppUser client;
     AuthUser authClient;
 
+    @Transactional
     @PostConstruct
     public void seedData() {
         createRoles();
@@ -97,38 +75,39 @@ public class DataSeeder {
     }
 
     private void createDefaultAdminAndClient() {
-        admin = AppUser.builder()
-                .firstName("Admin")
-                .lastName("Admin")
-                .build();
-        appUserRepository.save(admin);
-
         authAdmin = AuthUser.builder()
                 .email("admin@yoga.com")
                 .password(passwordEncoder.encode("admin"))
                 .status(AuthUserStatus.ACTIVE)
-                .appUser(admin)
                 .enabled(true)
                 .roles(Set.of(adminRole))
                 .build();
-        authUserRepository.save(authAdmin);
-
-        client = AppUser.builder()
-                .firstName("John")
-                .lastName("Wick")
-                .build();
-        appUserRepository.save(client);
 
         authClient = AuthUser.builder()
                 .email("client1@client.com")
                 .password(passwordEncoder.encode("admin"))
                 .status(AuthUserStatus.ACTIVE)
-                .appUser(client)
                 .enabled(true)
                 .roles(Set.of(clientRole))
                 .build();
-        authUserRepository.save(authClient);
 
+        authAdmin = authUserRepository.save(authAdmin);
+        authClient = authUserRepository.save(authClient);
+
+        admin = AppUser.builder()
+                .firstName("Admin")
+                .lastName("Admin")
+                .authUser(authAdmin)
+                .build();
+
+        client = AppUser.builder()
+                .firstName("John")
+                .lastName("Wick")
+                .authUser(authClient)
+                .build();
+
+        appUserRepository.save(admin);
+        appUserRepository.save(client);
     }
 
     private void createInstructors() {
@@ -142,10 +121,9 @@ public class DataSeeder {
         appUserRepository.saveAll(instructors);
     }
 
-    @Transactional
     private void createClients() {
-        List<AppUser> clients = IntStream.range(2, 5)
-                .mapToObj(i -> {
+        IntStream.range(2, 5)
+                .forEach(i -> {
                     AuthUser authUser = AuthUser.builder()
                             .email("client" + i + "@client.com")
                             .password(passwordEncoder.encode("admin"))
@@ -154,22 +132,18 @@ public class DataSeeder {
                             .roles(new HashSet<>(Collections.singletonList(clientRole)))
                             .build();
 
+                    authUser = authUserRepository.save(authUser);
+
                     AppUser appUser = AppUser.builder()
                             .firstName("Client" + i)
                             .lastName("Test")
                             .authUser(authUser)
                             .build();
 
-                    authUser.setAppUser(appUser);
-
-                    return appUser;
-                })
-                .collect(Collectors.toList());
-
-        appUserRepository.saveAll(clients);
+                    appUserRepository.save(appUser);
+                });
     }
 
-    @Transactional
     private AppUser createInstructor(String email, String firstName, String lastName, Role role) {
         AuthUser authUser = AuthUser.builder()
                 .email(email)
@@ -179,15 +153,13 @@ public class DataSeeder {
                 .roles(new HashSet<>(Collections.singletonList(role)))
                 .build();
 
-        AppUser appUser = AppUser.builder()
+        authUser = authUserRepository.save(authUser);
+
+        return AppUser.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .authUser(authUser)
                 .build();
-
-        authUser.setAppUser(appUser);
-
-        return appUserRepository.save(appUser);
     }
 
     private void seedEventTypes() {
@@ -196,7 +168,7 @@ public class DataSeeder {
         eventTypes.add(new EventType(2L, "Dance", "Morning dance"));
         eventTypes.add(new EventType(3L, "PoleDance", "Morning Pole Dance"));
 
-        eventTypes.forEach(eventType -> eventTypeRepository.save(eventType));
+        eventTypeRepository.saveAll(eventTypes);
     }
 
     private void seedEvents() {
@@ -225,7 +197,6 @@ public class DataSeeder {
         createRecurringPoleDance(admin, instructor, poleDanceType);
     }
 
-    //Single future events
     private void createSingleYogaWorkshop(AppUser admin, AppUser instructor, EventType yogaType) {
         Event event = Event.builder()
                 .title("Yoga Workshop")
@@ -239,10 +210,12 @@ public class DataSeeder {
                 .status(EventStatus.SCHEDULED)
                 .build();
         eventRepository.save(event);
+
         List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
-        occurrenceEvents.forEach(occurrenceEvent ->
-                occurrenceEventRepository.save(occurrenceEvent)
-        );
+
+        if (!occurrenceEvents.isEmpty()) {
+            occurrenceEventRepository.saveAll(occurrenceEvents);
+        }
     }
 
     private void createSingleDanceWorkshop(AppUser admin, AppUser instructor, EventType danceType) {
@@ -259,13 +232,15 @@ public class DataSeeder {
                 .status(EventStatus.SCHEDULED)
                 .build();
         eventRepository.save(event);
+
         List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
-        occurrenceEvents.forEach(occurrenceEvent ->
-                occurrenceEventRepository.save(occurrenceEvent)
-        );
+
+        if (!occurrenceEvents.isEmpty()) {
+            occurrenceEventRepository.saveAll(occurrenceEvents);
+        }
     }
 
-    //Single past events
+    // Single past events
     private void createSingleMorningTango(AppUser admin, AppUser instructor, EventType danceType) {
         Event event = Event.builder()
                 .title("Morning Tango")
@@ -280,10 +255,12 @@ public class DataSeeder {
                 .status(EventStatus.COMPLETED)
                 .build();
         eventRepository.save(event);
+
         List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
-        occurrenceEvents.forEach(occurrenceEvent ->
-                occurrenceEventRepository.save(occurrenceEvent)
-        );
+
+        if (!occurrenceEvents.isEmpty()) {
+            occurrenceEventRepository.saveAll(occurrenceEvents);
+        }
     }
 
     private void createSinglePolDanceWorkshop(AppUser admin, AppUser instructor, EventType danceType) {
@@ -300,10 +277,12 @@ public class DataSeeder {
                 .status(EventStatus.COMPLETED)
                 .build();
         eventRepository.save(event);
+
         List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
-        occurrenceEvents.forEach(occurrenceEvent ->
-                occurrenceEventRepository.save(occurrenceEvent)
-        );
+
+        if (!occurrenceEvents.isEmpty()) {
+            occurrenceEventRepository.saveAll(occurrenceEvents);
+        }
     }
 
     private void createSingleEveningYoga(AppUser admin, AppUser instructor, EventType danceType) {
@@ -320,10 +299,12 @@ public class DataSeeder {
                 .status(EventStatus.COMPLETED)
                 .build();
         eventRepository.save(event);
+
         List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
-        occurrenceEvents.forEach(occurrenceEvent ->
-                occurrenceEventRepository.save(occurrenceEvent)
-        );
+
+        if (!occurrenceEvents.isEmpty()) {
+            occurrenceEventRepository.saveAll(occurrenceEvents);
+        }
     }
 
     //Recurring future events
@@ -343,9 +324,10 @@ public class DataSeeder {
                 .build();
         eventRepository.save(event);
         List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
-        occurrenceEvents.forEach(occurrenceEvent ->
-                occurrenceEventRepository.save(occurrenceEvent)
-        );
+
+        if (occurrenceEvents.isEmpty()) {
+            occurrenceEventRepository.saveAll(occurrenceEvents);
+        }
     }
 
     private void createRecurringPoleDance(AppUser admin, AppUser instructor, EventType poleDanceType) {
@@ -364,18 +346,17 @@ public class DataSeeder {
                 .build();
         eventRepository.save(event);
         List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
-        occurrenceEvents.forEach(occurrenceEvent ->
-                occurrenceEventRepository.save(occurrenceEvent)
-        );
+
+        if (occurrenceEvents.isEmpty()) {
+            occurrenceEventRepository.saveAll(occurrenceEvents);
+        }
     }
 
-    @Transactional
     public void seedAttendancesTransactional() {
         seedAttendances();
     }
 
     private void seedAttendances() {
-
 
         // For each event, enroll client1 in the first occurrence (if available)
         seedAttendanceForEvent("Yoga Workshop");

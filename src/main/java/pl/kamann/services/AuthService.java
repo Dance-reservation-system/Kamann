@@ -11,7 +11,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
@@ -24,28 +23,25 @@ import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
-import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.repositories.RoleRepository;
+import pl.kamann.services.factory.UserFactory;
 import pl.kamann.utility.EntityLookupService;
-
-import java.time.LocalDateTime;
-import java.util.Set;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
 
-    private final AppUserMapper appUserMapper;
     private final ConfirmUserService confirmUserService;
+    private final UserFactory userFactory;
+    private final AppUserMapper appUserMapper;
 
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
@@ -81,62 +77,27 @@ public class AuthService {
 
     @Transactional
     public AppUserDto registerClient(RegisterRequest request) {
+        return registerUser(request, RoleCodes.CLIENT.name());
+    }
+
+    @Transactional
+    public AppUserDto registerInstructor(RegisterRequest request) {
+        return registerUser(request, RoleCodes.INSTRUCTOR.name());
+    }
+
+    private AppUserDto registerUser(RegisterRequest request, String roleCode) {
         lookupService.validateEmailNotTaken(request.email());
+        Role role = findRoleByName(roleCode);
 
-        Role clientRole = findRoleByName(RoleCodes.CLIENT.name());
-
-        AuthUser authUser = createAuthUser(request.email(), request.password(), clientRole);
-        AppUser appUser = createAppUser(request);
-
-        authUser.setAppUser(appUser);
-        appUser.setAuthUser(authUser);
+        AppUser appUser = userFactory.createAppUser(request);
+        AuthUser authUser = userFactory.createAndLinkAuthWithApp(request, role, appUser);
 
         AppUser savedAppUser = appUserRepository.save(appUser);
 
         confirmUserService.sendConfirmationEmail(authUser);
 
-        log.info("User registered successfully: email={}, role={}", request.email(), clientRole.getName());
+        log.info("User registered successfully: email={}, role={}", request.email(), role.getName());
         return appUserMapper.toAppUserDto(savedAppUser);
-    }
-
-    @Transactional
-    public AppUserDto registerInstructor(RegisterRequest request) {
-        lookupService.validateEmailNotTaken(request.email());
-
-        Role instructorRole = findRoleByName(RoleCodes.INSTRUCTOR.name());
-
-        AuthUser authUser = createAuthUser(request.email(), request.password(), instructorRole);
-        AppUser appUser = createAppUser(request);
-
-        authUser.setAppUser(appUser);
-        appUser.setAuthUser(authUser);
-
-        AppUser savedAppUser = appUserRepository.save(appUser);
-
-        // todo: Admin approval step instead of immediate confirmation email
-        log.info("Instructor registered successfully: email={}, role={}", request.email(), instructorRole.getName());
-        return appUserMapper.toAppUserDto(savedAppUser);
-    }
-
-
-    private AuthUser createAuthUser(String email, String password, Role role) {
-        AuthUser authUser = new AuthUser();
-        authUser.setEmail(email);
-        authUser.setPassword(passwordEncoder.encode(password));
-        authUser.setRoles(Set.of(role));
-        authUser.setStatus(AuthUserStatus.PENDING);
-        authUser.setEnabled(false);
-
-        return authUser;
-    }
-
-    private AppUser createAppUser(RegisterRequest request) {
-        AppUser user = new AppUser();
-        user.setFirstName(request.firstName());
-        user.setLastName(request.lastName());
-        user.setCreatedAt(LocalDateTime.now());
-        user.setPhone(request.phone());
-        return user;
     }
 
     public Role findRoleByName(String roleName) {

@@ -41,12 +41,10 @@ public class AuthUser implements UserDetails, Serializable {
     )
     private Set<Role> roles;
 
-    @OneToOne
-    @JoinColumn(name = "app_user_id", nullable = false)
+    @OneToOne(mappedBy = "authUser", cascade = CascadeType.ALL, orphanRemoval = true)
     private AppUser appUser;
 
     @Override
-    @OneToMany
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))

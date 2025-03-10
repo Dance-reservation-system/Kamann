@@ -31,6 +31,7 @@ import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.TokenService;
+import pl.kamann.services.factory.UserFactory;
 import pl.kamann.utility.EntityLookupService;
 
 import java.util.Optional;
@@ -69,6 +70,9 @@ class AuthServiceTest {
 
     @Mock
     private TokenService tokenService;
+
+    @Mock
+    private UserFactory userFactory;
 
     @Mock
     private AppUserMapper appUserMapper;
@@ -185,8 +189,9 @@ class AuthServiceTest {
                 .status(savedAuthUser.getStatus().name())
                 .build();
 
+        when(userFactory.createAppUser(request)).thenReturn(savedUser);
+        when(userFactory.createAndLinkAuthWithApp(request, clientRole, savedUser)).thenReturn(savedAuthUser);
         when(roleRepository.findByName("CLIENT")).thenReturn(Optional.of(clientRole));
-        when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
         doNothing().when(entityLookupService).validateEmailNotTaken(request.email());
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> {
             AppUser user = invocation.getArgument(0);
@@ -208,7 +213,6 @@ class AuthServiceTest {
 
         verify(entityLookupService).validateEmailNotTaken(request.email());
         verify(roleRepository).findByName("CLIENT");
-        verify(passwordEncoder).encode(request.password());
         verify(appUserRepository).save(any(AppUser.class));
         verify(appUserMapper).toAppUserDto(any(AppUser.class));
     }
