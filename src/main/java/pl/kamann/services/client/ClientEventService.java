@@ -21,8 +21,8 @@ import pl.kamann.mappers.OccurrenceEventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
 import pl.kamann.utility.EntityLookupService;
-import pl.kamann.utility.PaginationService;
-import pl.kamann.utility.PaginationUtil;
+import pl.kamann.config.pagination.PaginationService;
+import pl.kamann.config.pagination.PaginationUtil;
 
 @Service
 @RequiredArgsConstructor

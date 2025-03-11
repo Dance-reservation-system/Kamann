@@ -25,8 +25,8 @@ import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AppUserService;
 import pl.kamann.services.factory.UserFactory;
 import pl.kamann.utility.EntityLookupService;
-import pl.kamann.utility.PaginationService;
-import pl.kamann.utility.PaginationUtil;
+import pl.kamann.config.pagination.PaginationService;
+import pl.kamann.config.pagination.PaginationUtil;
 
 import java.util.List;
 import java.util.Set;

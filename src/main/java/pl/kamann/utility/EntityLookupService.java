@@ -110,12 +110,15 @@ public class EntityLookupService {
                         StatusCodes.NO_RESULTS.name()));
     }
 
-    public void validateUserIdAndStatus(Long userId, AuthUserStatus status) {
+    public void validateUserId(Long userId) {
         if (userId == null) {
             throw new ApiException("User ID cannot be null",
                     HttpStatus.BAD_REQUEST,
                     StatusCodes.INVALID_INPUT.name());
         }
+    }
+
+    public void validateUserStatus(AuthUserStatus status) {
         if (status == null) {
             throw new ApiException("Status cannot be null",
                     HttpStatus.BAD_REQUEST,

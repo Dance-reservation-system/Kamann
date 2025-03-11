@@ -2,9 +2,10 @@ package pl.kamann.dtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import org.springframework.http.HttpStatus;
+import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
 
 import java.time.LocalTime;
@@ -38,7 +39,7 @@ public record FacilityDto(
             throw new ApiException(
                     "Opening hours must be before closing hours",
                     HttpStatus.BAD_REQUEST,
-                    "INVALID_OPENING_CLOSING_HOURS"
+                    StatusCodes.INVALID_OPENING_CLOSING_HOURS.name()
             );
         }
     }

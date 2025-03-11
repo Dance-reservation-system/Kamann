@@ -21,7 +21,5 @@ public interface MembershipCardRepository extends JpaRepository<MembershipCard, 
 
     Optional<MembershipCard> findActiveCardByUserId(Long userId);
 
-    List<MembershipCard> findAllByUser(AppUser user);
-
     List<MembershipCard> findByUserIdAndActiveTrue(Long clientId);
 }

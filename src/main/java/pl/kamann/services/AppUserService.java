@@ -19,8 +19,8 @@ import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.utility.EntityLookupService;
-import pl.kamann.utility.PaginationService;
-import pl.kamann.utility.PaginationUtil;
+import pl.kamann.config.pagination.PaginationService;
+import pl.kamann.config.pagination.PaginationUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -64,7 +64,8 @@ public class AppUserService implements UserDetailsService {
 
     @Transactional
     public AppUserDto changeUserStatus(Long userId, AuthUserStatus status) {
-        entityLookupService.validateUserIdAndStatus(userId, status);
+        entityLookupService.validateUserId(userId);
+        entityLookupService.validateUserStatus(status);
 
         AppUser user = entityLookupService.findUserByIdWithAuth(userId);
         AuthUser authUser = user.getAuthUser();
