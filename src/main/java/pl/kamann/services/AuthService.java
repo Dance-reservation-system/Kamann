@@ -92,6 +92,7 @@ public class AuthService {
         AppUser appUser = userFactory.createAppUser(request);
         AuthUser authUser = userFactory.createAndLinkAuthWithApp(request, role, appUser);
 
+        authUserRepository.save(authUser);
         AppUser savedAppUser = appUserRepository.save(appUser);
 
         confirmUserService.sendConfirmationEmail(authUser);

@@ -37,14 +37,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
         log.debug("JWT Filter Intercepted Request: {}", requestURI);
 
-        if (requestURI.startsWith("/api/v1/auth/confirm") ||
-                requestURI.startsWith("/api/v1/auth/register") ||
-                requestURI.startsWith("/api/v1/auth/login")) {
-            log.debug("Skipping JWT authentication for: {}", requestURI);
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         Optional<String> tokenOpt = jwtUtils.extractTokenFromRequest(request);
 
         if (tokenOpt.isEmpty() || !jwtUtils.validateToken(tokenOpt.get())) {
