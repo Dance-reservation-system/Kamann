@@ -77,7 +77,7 @@ public class DataSeeder {
 
     private void createDefaultAdminAndClient() {
         createUser("admin@yoga.com", "Admin", "Admin", Set.of(adminRole));
-        createUser("client1@client.com", "John", "Wick", Set.of(clientRole));
+        client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole));
     }
 
     private void createInstructors() {
@@ -137,7 +137,7 @@ public class DataSeeder {
         Map<String, EventType> eventTypes = Map.of(
                 "Yoga", getEventType("Yoga"),
                 "Dance", getEventType("Dance"),
-                "PoleDance", getEventType("Pole Dance")
+                "PoleDance", getEventType("PoleDance")
         );
 
         events = List.of(
