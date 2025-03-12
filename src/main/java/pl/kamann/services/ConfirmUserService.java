@@ -120,7 +120,6 @@ public class ConfirmUserService {
 
         cancelDeletionTask(email);
 
-        sendConfirmationEmail(user, token);
         log.info("User account confirmed for: {}", user.getEmail());
     }
 }
