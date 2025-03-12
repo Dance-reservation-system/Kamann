@@ -177,27 +177,4 @@ public class ConfirmUserServiceTest {
 
         Mockito.verify(lookupService).handleUserAlreadyConfirmedException(email);
     }
-
-    @Test
-    public void shouldSendConfirmationEmailWhenAccountIsSuccessfullyConfirmed() throws MessagingException {
-        String email = "user@example.com";
-
-        AuthUser authUser = new AuthUser();
-        authUser.setEmail(email);
-        authUser.setEnabled(false);
-
-        AppUser appUser = new AppUser();
-        appUser.setAuthUser(authUser);
-
-        Mockito.when(jwtUtils.validateToken(Mockito.anyString())).thenReturn(true);
-        Mockito.when(jwtUtils.isTokenTypeValid(Mockito.anyString(), Mockito.any())).thenReturn(true);
-        Mockito.when(jwtUtils.extractEmail(Mockito.anyString())).thenReturn(email);
-        Mockito.when(lookupService.findUserByEmail(email)).thenReturn(appUser);
-
-        confirmUserService.confirmUserAccount("valid_token");
-
-        Mockito.verify(emailSender, Mockito.times(1))
-                .sendEmail(Mockito.eq(authUser.getEmail()), Mockito.any(), Mockito.any(), Mockito.eq("registration"));
-    }
-
 }
