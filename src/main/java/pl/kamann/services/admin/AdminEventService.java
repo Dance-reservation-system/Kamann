@@ -14,12 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.dtos.event.EventDto;
-import pl.kamann.dtos.event.EventUpdateRequest;
-import pl.kamann.dtos.event.EventUpdateResponse;
-import pl.kamann.dtos.OccurrenceEventDto;
-import pl.kamann.dtos.event.CreateEventRequest;
-import pl.kamann.dtos.event.CreateEventResponse;
+import pl.kamann.dtos.event.*;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
@@ -32,8 +27,8 @@ import pl.kamann.services.EventTypeService;
 import pl.kamann.services.EventValidationService;
 import pl.kamann.services.NotificationService;
 import pl.kamann.utility.EntityLookupService;
-import pl.kamann.utility.PaginationService;
-import pl.kamann.utility.PaginationUtil;
+import pl.kamann.config.pagination.PaginationService;
+import pl.kamann.config.pagination.PaginationUtil;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -202,11 +197,5 @@ public class AdminEventService {
         Event eventById = entityLookupService.findEventById(eventId);
 
         return eventMapper.toEventDto(eventById);
-    }
-
-    public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
-        OccurrenceEvent occurrenceEvent = occurrenceEventRepository.getReferenceById(occurrenceId);
-
-        return occurrenceEventMapper.toOccurrenceEventDto(occurrenceEvent);
     }
 }

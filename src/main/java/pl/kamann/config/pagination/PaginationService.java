@@ -1,4 +1,4 @@
-package pl.kamann.utility;
+package pl.kamann.config.pagination;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

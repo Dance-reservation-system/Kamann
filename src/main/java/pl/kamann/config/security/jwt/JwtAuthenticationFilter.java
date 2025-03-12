@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,8 +14,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.repositories.AuthUserRepository;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,15 +24,11 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
-    private final AppUserRepository appUserRepository;
-
-    public JwtAuthenticationFilter(JwtUtils jwtUtils, AppUserRepository appUserRepository) {
-        this.jwtUtils = jwtUtils;
-        this.appUserRepository = appUserRepository;
-    }
+    private final AuthUserRepository authUserRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -39,14 +36,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String requestURI = request.getRequestURI();
         log.debug("JWT Filter Intercepted Request: {}", requestURI);
-
-        if (requestURI.startsWith("/api/v1/auth/confirm") ||
-                requestURI.startsWith("/api/v1/auth/register") ||
-                requestURI.startsWith("/api/v1/auth/login")) {
-            log.debug("Skipping JWT authentication for: {}", requestURI);
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         Optional<String> tokenOpt = jwtUtils.extractTokenFromRequest(request);
 
@@ -62,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String email = jwtUtils.extractEmail(token);
 
         try {
-            AppUser user = appUserRepository.findAppUserWithRolesByEmail(email)
+            AuthUser user = authUserRepository.findByEmail(email)
                     .orElseThrow(() -> {
                         log.warn("User with email {} not found", email);
                         return new UsernameNotFoundException("User not found");

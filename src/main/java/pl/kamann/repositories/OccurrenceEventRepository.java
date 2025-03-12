@@ -14,8 +14,6 @@ import java.util.List;
 
 public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent, Long> {
 
-    boolean existsByEventIdAndStartAfter(Long eventId, LocalDateTime startDate);
-
     @Query("SELECT o.start FROM OccurrenceEvent o WHERE o.event.id = :eventId")
     List<LocalDateTime> findStartDatesByEventId(@Param("eventId") Long eventId);
 

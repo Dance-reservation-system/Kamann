@@ -3,30 +3,24 @@ package pl.kamann.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import pl.kamann.config.codes.AuthCodes;
-import pl.kamann.config.codes.StatusCodes;
-import pl.kamann.config.exception.handler.ApiException;
+import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.AppUserDto;
-import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
-import pl.kamann.repositories.RoleRepository;
+import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.utility.EntityLookupService;
-import pl.kamann.utility.PaginationService;
-import pl.kamann.utility.PaginationUtil;
-
-import java.util.Set;
+import pl.kamann.config.pagination.PaginationService;
+import pl.kamann.config.pagination.PaginationUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -34,134 +28,66 @@ public class AppUserService implements UserDetailsService {
 
     private final AppUserRepository appUserRepository;
     private final AppUserMapper appUserMapper;
-    private final RoleRepository roleRepository;
 
-    private final PasswordEncoder passwordEncoder;
     private final EntityLookupService entityLookupService;
 
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
+    private final AuthUserRepository authUserRepository;
+
 
     public PaginatedResponseDto<AppUserDto> getUsers(Pageable pageable, String roleName) {
         pageable = paginationService.validatePageable(pageable);
 
-        Page<AppUser> pagedUsers;
+        Page<AuthUser> pagedAuthUsers;
 
         if (roleName == null || roleName.isEmpty()) {
-            pagedUsers = appUserRepository.findAllWithRoles(pageable);
+            pagedAuthUsers = authUserRepository.findAll(pageable);
         } else {
-            Role role = roleRepository.findByName(roleName.toUpperCase())
-                    .orElseThrow(() -> new ApiException(
-                            "Role not found: " + roleName,
-                            HttpStatus.NOT_FOUND,
-                            StatusCodes.NO_RESULTS.name()));
-
-            pagedUsers = appUserRepository.findUsersByRoleWithRoles(pageable, role);
+            Role role = entityLookupService.findRoleByName(roleName);
+            pagedAuthUsers = authUserRepository.findUsersByRoleWithRoles(pageable, role);
         }
 
-        return paginationUtil.toPaginatedResponse(pagedUsers, appUserMapper::toAppUserDto);
+        return paginationUtil.toPaginatedResponse(pagedAuthUsers, this::mapAuthUserToAppUserDto);
+    }
+
+    private AppUserDto mapAuthUserToAppUserDto(AuthUser authUser) {
+        AppUser appUser = entityLookupService.findAppUserByAuthUser(authUser);
+        return appUserMapper.toAppUserDto(appUser);
     }
 
     public AppUserDto getUserById(Long id) {
-        if (id == null) {
-            throw new ApiException(
-                    "User ID cannot be null",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_INPUT.name()
-            );
-        }
-
         AppUser user = entityLookupService.findUserById(id);
         return appUserMapper.toAppUserDto(user);
     }
 
-    public AppUserDto createUser(RegisterRequest request) {
-        if (request.email() == null || request.email().isBlank()) {
-            throw new ApiException(
-                    "Email cannot be null or blank",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_INPUT.name()
-            );
-        }
 
-        if (request.role() == null || request.role().isBlank()) {
-            throw new ApiException(
-                    "Role cannot be null or blank",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_INPUT.name()
-            );
-        }
+    @Transactional
+    public AppUserDto changeUserStatus(Long userId, AuthUserStatus status) {
+        entityLookupService.validateUserId(userId);
+        entityLookupService.validateUserStatus(status);
 
-        entityLookupService.validateEmailNotTaken(request.email());
+        AppUser user = entityLookupService.findUserByIdWithAuth(userId);
+        AuthUser authUser = user.getAuthUser();
+        authUser.setStatus(status);
+        appUserRepository.save(user);
 
-        Role role = roleRepository.findByName(request.role().toUpperCase())
-                .orElseThrow(() -> new ApiException(
-                        "Role not found: " + request.role(),
-                        HttpStatus.NOT_FOUND,
-                        AuthCodes.ROLE_NOT_FOUND.name()
-                ));
-
-        String encodedPassword = passwordEncoder.encode(request.password());
-
-        AppUser user = new AppUser();
-        user.setEmail(request.email());
-        user.setPassword(encodedPassword);
-        user.setFirstName(request.firstName());
-        user.setLastName(request.lastName());
-        user.setRoles(Set.of(role));
-        user.setStatus(AppUserStatus.ACTIVE);
-        user.setEnabled(false);
-
-        return appUserMapper.toAppUserDto(appUserRepository.save(user));
-    }
-
-    public AppUserDto changeUserStatus(Long userId, AppUserStatus status) {
-        if (userId == null) {
-            throw new ApiException(
-                    "User ID cannot be null",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_INPUT.name()
-            );
-        }
-
-        if (status == null) {
-            throw new ApiException(
-                    "Status cannot be null",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_INPUT.name()
-            );
-        }
-
-        AppUser user = entityLookupService.findUserById(userId);
-        user.setStatus(status);
-        return appUserMapper.toAppUserDto(appUserRepository.save(user));
+        return appUserMapper.toAppUserDto(user);
     }
 
     public void activateUser(Long userId) {
-        changeUserStatus(userId, AppUserStatus.ACTIVE);
+        changeUserStatus(userId, AuthUserStatus.ACTIVE);
     }
 
     public void deactivateUser(Long userId) {
-        changeUserStatus(userId, AppUserStatus.INACTIVE);
+        changeUserStatus(userId, AuthUserStatus.INACTIVE);
     }
 
     public PaginatedResponseDto<AppUserDto> getUsersByRole(String roleName, Pageable pageable) {
-        if (roleName == null || roleName.isBlank()) {
-            throw new ApiException(
-                    "Role name cannot be null or blank",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_INPUT.name()
-            );
-        }
+        Role role = entityLookupService.findRoleByName(roleName);
 
-        Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new ApiException(
-                        "Role not found: " + roleName,
-                        HttpStatus.NOT_FOUND,
-                        AuthCodes.ROLE_NOT_FOUND.name()
-                ));
-
-        Page<AppUser> users = appUserRepository.findByRolesContaining(role, pageable);
+        Page<AuthUser> authUsers = authUserRepository.findByRolesContaining(role, pageable);
+        Page<AppUser> users = authUsers.map(AuthUser::getAppUser);
 
         PaginationMetaData metaData = new PaginationMetaData(users.getTotalPages(), users.getTotalElements());
 
@@ -170,7 +96,7 @@ public class AppUserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return appUserRepository.findByEmail(username)
+        return authUserRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }

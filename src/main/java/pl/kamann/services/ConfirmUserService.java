@@ -10,56 +10,78 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
+import pl.kamann.utility.EntityLookupService;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ConfirmUserService {
-    private final AppUserRepository appUserRepository;
+
     private final EmailSender emailSender;
     private final TokenService tokenService;
     private final JwtUtils jwtUtils;
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+    private final AuthUserRepository authUserRepository;
+    private final AppUserRepository appUserRepository;
+    private final EntityLookupService lookupService;
 
-    public void sendConfirmationEmail(AppUser appUser) {
+    private final Map<String, ScheduledFuture<?>> deletionTasks = new ConcurrentHashMap<>();
 
-        String token = tokenService.generateToken(appUser.getEmail(), TokenType.CONFIRMATION, 15 * 60 * 1000);
+    private void sendConfirmationEmail(AuthUser authUser, String token) {
+        String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
 
         try {
-            String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
-            emailSender.sendEmail(appUser.getEmail(), confirmationLink, Locale.ENGLISH, "registration");
-            log.info("Confirmation email sent successfully to user: {}", appUser.getEmail());
-
-            scheduleUserDeletion(appUser.getEmail());
-
+            emailSender.sendEmail(authUser.getEmail(), confirmationLink, Locale.ENGLISH, "registration");
+            log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
         } catch (MessagingException e) {
-            log.error("Error sending the confirmation email to user: {}", appUser.getEmail(), e);
-            throw new ApiException(
-                    "Error sending the confirmation email.",
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    AuthCodes.CONFIRMATION_EMAIL_ERROR.name()
-            );
+            log.error("Error sending the confirmation email to user: {}", authUser.getEmail(), e);
+            lookupService.handleEmailSendingError();
         }
     }
 
-    private void scheduleUserDeletion(String email){
-        scheduledExecutorService.schedule(() -> {
-            Optional<AppUser> appUserOptional = appUserRepository.findByEmail(email);
-            if (appUserOptional.isPresent() && !appUserOptional.get().isEnabled()) {
-                appUserRepository.delete(appUserOptional.get());
+    private void handleEmailSending(AuthUser authUser) {
+        String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION, 15 * 60 * 1000);
+        sendConfirmationEmail(authUser, token);
+        scheduleUserDeletion(authUser.getEmail());
+    }
+
+    public void sendConfirmationEmail(AuthUser authUser) {
+        handleEmailSending(authUser);
+    }
+
+    private void scheduleUserDeletion(String email) {
+        cancelDeletionTask(email);
+
+        ScheduledFuture<?> task = scheduledExecutorService.schedule(() -> {
+            Optional<AuthUser> authUserOptional = authUserRepository.findByEmail(email);
+            if (authUserOptional.isPresent() && !authUserOptional.get().isEnabled()) {
+                authUserRepository.delete(authUserOptional.get());
                 log.info("User {} deleted due to inactivity after {} minutes", email, 15);
             }
+            deletionTasks.remove(email);
         }, 15, TimeUnit.MINUTES);
+
+        deletionTasks.put(email, task);
+    }
+
+    private void cancelDeletionTask(String email) {
+        ScheduledFuture<?> task = deletionTasks.get(email);
+        if (task != null && !task.isDone() && !task.isCancelled()) {
+            task.cancel(false);
+            log.info("Cancelled scheduled deletion task for user: {}", email);
+        }
+        deletionTasks.remove(email);
     }
 
     @Transactional
@@ -67,43 +89,36 @@ public class ConfirmUserService {
         log.info("Confirming user account for token: {}", token);
 
         if (!jwtUtils.validateToken(token)) {
-            throw new ApiException(
-                    "Invalid or expired confirmation Token",
-                    HttpStatus.UNAUTHORIZED,
-                    AuthCodes.INVALID_TOKEN.name()
-            );
+            lookupService.handleInvalidTokenException();
         }
-
         if (!jwtUtils.isTokenTypeValid(token, TokenType.CONFIRMATION)) {
-            throw new ApiException(
-                    "Token type is invalid",
-                    HttpStatus.UNAUTHORIZED,
-                    AuthCodes.INVALID_TOKEN.name()
-            );
+            lookupService.handleInvalidTokenTypeException();
         }
 
         String email = jwtUtils.extractEmail(token);
+        AppUser userByEmail = lookupService.findUserByEmail(email);
 
-        AppUser user = appUserRepository.findByEmail(email).orElseThrow(() ->
-                new ApiException(
-                        "User not found",
-                        HttpStatus.NOT_FOUND,
-                        AuthCodes.USER_NOT_FOUND.name()
-                )
-        );
+        if (userByEmail == null) {
+            lookupService.handleUserNotFoundException(email);
+            return;
+        }
+        AuthUser user = userByEmail.getAuthUser();
 
         if (user.isEnabled()) {
-            throw new ApiException(
-                    "User is already confirmed",
-                    HttpStatus.BAD_REQUEST,
-                    AuthCodes.USER_ALREADY_CONFIRMED.name()
-            );
+            lookupService.handleUserAlreadyConfirmedException(email);
         }
 
         user.setEnabled(true);
-        user.setStatus(AppUserStatus.ACTIVE);
+        user.setStatus(AuthUserStatus.ACTIVE);
+        authUserRepository.save(user);
 
-        appUserRepository.save(user);
+        if (!appUserRepository.existsByAuthUser(user)) {
+            AppUser newAppUser = new AppUser();
+            newAppUser.setAuthUser(user);
+            appUserRepository.save(newAppUser);
+        }
+
+        cancelDeletionTask(email);
 
         log.info("User account confirmed for: {}", user.getEmail());
     }

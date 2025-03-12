@@ -1,9 +1,7 @@
-package pl.kamann.utility;
+package pl.kamann.config.pagination;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
-import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.config.pagination.PaginationMetaData;
 
 import java.util.List;
 import java.util.function.Function;

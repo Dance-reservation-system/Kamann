@@ -6,19 +6,15 @@ import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.Role;
-
-import java.util.Set;
 
 @Mapper(componentModel = "spring")
 public interface AppUserMapper {
-    AppUserDto toAppUserDto(AppUser user);
 
-    @Mapping(target = "roles", source = "roles")
-    AppUser toAppUser(AppUserDto dto, Set<Role> roles);
+    @Mapping(source = "authUser.email", target = "email")
+    @Mapping(source = "authUser.status", target = "status")
+    AppUserDto toAppUserDto(AppUser user);
 
     PaginatedResponseDto<AppUserDto> toPaginatedResponseDto(PaginatedResponseDto<AppUser> users);
 
     AppUserResponseDto toAppUserResponseDto(AppUser loggedInUser);
-
 }
