@@ -11,7 +11,8 @@ import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.EventLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -21,13 +22,14 @@ import java.util.Map;
 public class ClientAttendanceService {
 
     private final AttendanceRepository attendanceRepository;
-    private final EntityLookupService lookupService;
     private final ClientMembershipCardService clientMembershipCardService;
+    private final EventLookupService eventLookupService;
+    private final UserLookupService userLookupService;
 
     @Transactional
     public Attendance joinEvent(Long occurrenceEventId) {
-        AppUser client = lookupService.getLoggedInUser();
-        OccurrenceEvent occurrenceEvent = lookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
+        AppUser client = userLookupService.getLoggedInUser();
+        OccurrenceEvent occurrenceEvent = eventLookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
 
         // Check if the client is already registered.
         if (attendanceRepository.findByUserAndOccurrenceEvent(client, occurrenceEvent).isPresent()) {
@@ -55,8 +57,8 @@ public class ClientAttendanceService {
 
     @Transactional
     public Attendance cancelAttendance(Long occurrenceEventId) {
-        AppUser currentUser = lookupService.getLoggedInUser();
-        OccurrenceEvent occurrenceEvent = lookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
+        AppUser currentUser = userLookupService.getLoggedInUser();
+        OccurrenceEvent occurrenceEvent = eventLookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
 
         Attendance attendance = attendanceRepository.findByUserAndOccurrenceEvent(currentUser, occurrenceEvent)
                 .orElseThrow(() -> new ApiException(

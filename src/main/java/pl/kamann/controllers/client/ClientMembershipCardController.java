@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.services.client.ClientMembershipCardService;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ import java.util.List;
 public class ClientMembershipCardController {
 
     private final ClientMembershipCardService clientMembershipCardService;
-    private final EntityLookupService lookupService;
+    private final UserLookupService userLookupService;
 
     @GetMapping("/available")
     @Operation(summary = "Fetch all available predefined membership cards.")
@@ -37,7 +37,7 @@ public class ClientMembershipCardController {
     @GetMapping("/active")
     @Operation(summary = "Get the currently active membership card for the logged-in user.")
     public ResponseEntity<MembershipCard> getActiveMembershipCard() {
-        MembershipCard card = clientMembershipCardService.getActiveCard(lookupService.getLoggedInUser().getId());
+        MembershipCard card = clientMembershipCardService.getActiveCard(userLookupService.getLoggedInUser().getId());
         return ResponseEntity.ok(card);
     }
 }

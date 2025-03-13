@@ -30,9 +30,8 @@ import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
-import pl.kamann.services.TokenService;
 import pl.kamann.services.factory.UserFactory;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 
 import java.util.Optional;
 import java.util.Set;
@@ -45,7 +44,7 @@ import static org.mockito.Mockito.*;
 class AuthServiceTest {
 
     @Mock
-    private EntityLookupService entityLookupService;
+    private ValidationService validationService;
 
     @Mock
     private AppUserRepository appUserRepository;
@@ -67,9 +66,6 @@ class AuthServiceTest {
 
     @Mock
     private ConfirmUserService confirmUserService;
-
-    @Mock
-    private TokenService tokenService;
 
     @Mock
     private UserFactory userFactory;
@@ -192,7 +188,7 @@ class AuthServiceTest {
         when(userFactory.createAppUser(request)).thenReturn(savedUser);
         when(userFactory.createAndLinkAuthWithApp(request, clientRole, savedUser)).thenReturn(savedAuthUser);
         when(roleRepository.findByName("CLIENT")).thenReturn(Optional.of(clientRole));
-        doNothing().when(entityLookupService).validateEmailNotTaken(request.email());
+        doNothing().when(validationService).validateEmailNotTaken(request.email());
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> {
             AppUser user = invocation.getArgument(0);
             user.setId(1L);
@@ -211,7 +207,7 @@ class AuthServiceTest {
         assertEquals(expectedDto.phone(), registeredUser.phone());
         assertEquals(expectedDto.status(), registeredUser.status());
 
-        verify(entityLookupService).validateEmailNotTaken(request.email());
+        verify(validationService).validateEmailNotTaken(request.email());
         verify(roleRepository).findByName("CLIENT");
         verify(appUserRepository).save(any(AppUser.class));
         verify(appUserMapper).toAppUserDto(any(AppUser.class));
@@ -222,14 +218,14 @@ class AuthServiceTest {
         RegisterRequest request = new RegisterRequest("existing@example.com", "password", "John", "Doe", "123-456-7890");
 
         doThrow(new ApiException("Email is already registered: " + request.email(), HttpStatus.CONFLICT, AuthCodes.EMAIL_ALREADY_EXISTS.getCode()))
-                .when(entityLookupService).validateEmailNotTaken(request.email());
+                .when(validationService).validateEmailNotTaken(request.email());
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.registerClient(request));
 
         assertEquals("Email is already registered: " + request.email(), exception.getMessage());
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
 
-        verify(entityLookupService).validateEmailNotTaken(request.email());
+        verify(validationService).validateEmailNotTaken(request.email());
         verifyNoInteractions(passwordEncoder, roleRepository, appUserRepository);
     }
 
@@ -237,7 +233,7 @@ class AuthServiceTest {
     void shouldThrowExceptionWhenClientRoleNotFoundDuringRegistration() {
         RegisterRequest request = new RegisterRequest("new@example.com", "password", "John", "Doe", "123-456-7890");
 
-        doNothing().when(entityLookupService).validateEmailNotTaken(request.email());
+        doNothing().when(validationService).validateEmailNotTaken(request.email());
         when(roleRepository.findByName(RoleCodes.CLIENT.name())).thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.registerClient(request));
@@ -245,7 +241,7 @@ class AuthServiceTest {
         assertEquals("Role not found: " + RoleCodes.CLIENT.name(), exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
-        verify(entityLookupService).validateEmailNotTaken(request.email());
+        verify(validationService).validateEmailNotTaken(request.email());
         verify(roleRepository).findByName(RoleCodes.CLIENT.name());
         verifyNoInteractions(passwordEncoder, appUserRepository, confirmUserService);
     }
@@ -254,7 +250,7 @@ class AuthServiceTest {
     void shouldThrowExceptionWhenInstructorRoleNotFoundDuringRegistration() {
         RegisterRequest request = new RegisterRequest("new@example.com", "password", "John", "Doe", "123-456-7890");
 
-        doNothing().when(entityLookupService).validateEmailNotTaken(request.email());
+        doNothing().when(validationService).validateEmailNotTaken(request.email());
         when(roleRepository.findByName(RoleCodes.INSTRUCTOR.name())).thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.registerInstructor(request));
@@ -262,7 +258,7 @@ class AuthServiceTest {
         assertEquals("Role not found: " + RoleCodes.INSTRUCTOR.name(), exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
-        verify(entityLookupService).validateEmailNotTaken(request.email());
+        verify(validationService).validateEmailNotTaken(request.email());
         verify(roleRepository).findByName(RoleCodes.INSTRUCTOR.name());
         verifyNoInteractions(passwordEncoder, appUserRepository);
     }

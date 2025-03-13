@@ -29,7 +29,7 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.factory.UserFactory;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 
 @Slf4j
 @Service
@@ -47,7 +47,7 @@ public class AuthService {
     private final AppUserRepository appUserRepository;
     private final AuthUserRepository authUserRepository;
 
-    private final EntityLookupService lookupService;
+    private final ValidationService validationService;
 
     public LoginResponse login(@Valid LoginRequest request) {
         try {
@@ -86,7 +86,7 @@ public class AuthService {
     }
 
     private AppUserDto registerUser(RegisterRequest request, String roleCode) {
-        lookupService.validateEmailNotTaken(request.email());
+        validationService.validateEmailNotTaken(request.email());
         Role role = findRoleByName(roleCode);
 
         AppUser appUser = userFactory.createAppUser(request);
