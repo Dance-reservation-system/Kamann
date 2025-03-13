@@ -4,10 +4,8 @@ import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import pl.kamann.config.codes.AuthCodes;
-import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.exception.handler.ExceptionHandlerService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
@@ -16,7 +14,7 @@ import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 import java.util.Locale;
 import java.util.Map;
@@ -34,9 +32,10 @@ public class ConfirmUserService {
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
     private final AuthUserRepository authUserRepository;
     private final AppUserRepository appUserRepository;
-    private final EntityLookupService lookupService;
+    private final ExceptionHandlerService exceptionHandlerService;
 
     private final Map<String, ScheduledFuture<?>> deletionTasks = new ConcurrentHashMap<>();
+    private final UserLookupService userLookupService;
 
     private void sendConfirmationEmail(AuthUser authUser, String token) {
         String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
@@ -46,7 +45,7 @@ public class ConfirmUserService {
             log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
         } catch (MessagingException e) {
             log.error("Error sending the confirmation email to user: {}", authUser.getEmail(), e);
-            lookupService.handleEmailSendingError();
+            exceptionHandlerService.handleEmailSendingError();
         }
     }
 
@@ -89,23 +88,23 @@ public class ConfirmUserService {
         log.info("Confirming user account for token: {}", token);
 
         if (!jwtUtils.validateToken(token)) {
-            lookupService.handleInvalidTokenException();
+            exceptionHandlerService.handleInvalidTokenException();
         }
         if (!jwtUtils.isTokenTypeValid(token, TokenType.CONFIRMATION)) {
-            lookupService.handleInvalidTokenTypeException();
+            exceptionHandlerService.handleInvalidTokenTypeException();
         }
 
         String email = jwtUtils.extractEmail(token);
-        AppUser userByEmail = lookupService.findUserByEmail(email);
+        AppUser userByEmail = userLookupService.findUserByEmail(email);
 
         if (userByEmail == null) {
-            lookupService.handleUserNotFoundException(email);
+            exceptionHandlerService.handleUserNotFoundException(email);
             return;
         }
         AuthUser user = userByEmail.getAuthUser();
 
         if (user.isEnabled()) {
-            lookupService.handleUserAlreadyConfirmedException(email);
+            exceptionHandlerService.handleUserAlreadyConfirmedException(email);
         }
 
         user.setEnabled(true);

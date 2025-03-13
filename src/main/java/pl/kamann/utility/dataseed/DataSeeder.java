@@ -18,7 +18,7 @@ import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.*;
 import pl.kamann.services.admin.AdminEventService;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -33,7 +33,6 @@ import java.util.stream.IntStream;
 public class DataSeeder {
 
     private final RoleRepository roleRepository;
-    private final EntityLookupService lookupService;
     private final AppUserRepository appUserRepository;
     private final AuthUserRepository authUserRepository;
     private final EventTypeRepository eventTypeRepository;
@@ -42,6 +41,7 @@ public class DataSeeder {
     private final OccurrenceEventRepository occurrenceEventRepository;
     private final AttendanceRepository attendanceRepository;
     private final AdminEventService adminEventService;
+    private final UserLookupService userLookupService;
 
     private final Long YOGA_TYPE_ID = 1L;
     private final Long DANCE_TYPE_ID = 2L;
@@ -131,8 +131,8 @@ public class DataSeeder {
     }
 
     private void seedEvents() {
-        AppUser admin = lookupService.findUserByEmail("admin@yoga.com");
-        AppUser instructor = lookupService.findUserByEmail("instructor1@yoga.com");
+        AppUser admin = userLookupService.findUserByEmail("admin@yoga.com");
+        AppUser instructor = userLookupService.findUserByEmail("instructor1@yoga.com");
 
         Map<String, EventType> eventTypes = Map.of(
                 "Yoga", getEventType("Yoga"),
@@ -150,7 +150,9 @@ public class DataSeeder {
             new EventData("Evening Pole Dance", "Weekly pole dance classes", LocalDateTime.now().plusDays(3).withHour(19).withMinute(0), 75, 12, eventTypes.get("PoleDance"), "FREQ=WEEKLY;BYDAY=TU,TH;INTERVAL=1;COUNT=10")
         );
 
-        events.forEach(event -> {createEventWithOccurrences(event, admin, instructor);});
+        events.forEach(event -> {
+            createEventWithOccurrences(event, admin, instructor);
+        });
     }
 
     private EventType getEventType(String name) {

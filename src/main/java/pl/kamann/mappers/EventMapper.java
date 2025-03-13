@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 @Mapper(componentModel = "spring")
 public interface EventMapper {
@@ -34,10 +34,10 @@ public interface EventMapper {
                 : 0;
     }
 
-    @Mapping(target = "createdBy", expression = "java(lookupService.getLoggedInUser())")
-    @Mapping(target = "instructor", expression = "java(lookupService.findUserById(request.instructorId()))")
+    @Mapping(target = "createdBy", expression = "java(userLookupService.getLoggedInUser())")
+    @Mapping(target = "instructor", expression = "java(userLookupService.findUserById(request.instructorId()))")
     @Mapping(target = "status", expression = "java(EventStatus.SCHEDULED)")
-    Event toEvent(CreateEventRequest request, @Context EntityLookupService lookupService);
+    Event toEvent(CreateEventRequest request, @Context UserLookupService userLookupService);
 
     CreateEventResponse toCreateEventResponse(Event event);
 

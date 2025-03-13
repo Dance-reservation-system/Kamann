@@ -10,7 +10,7 @@ import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
 import pl.kamann.repositories.MembershipCardRepository;
 import pl.kamann.services.MembershipCardService;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 import java.util.List;
 
@@ -20,12 +20,12 @@ public class ClientMembershipCardService {
 
     private final MembershipCardRepository membershipCardRepository;
     private final MembershipCardService membershipCardService;
-    private final EntityLookupService lookupService;
+    private final UserLookupService userLookupService;
 
     @Transactional
     public MembershipCard requestMembershipCard(Long cardId) {
-        var loggedInUser = lookupService.getLoggedInUser();
-        var client = lookupService.findUserById(loggedInUser.getId());
+        var loggedInUser = userLookupService.getLoggedInUser();
+        var client = userLookupService.findUserById(loggedInUser.getId());
 
         if (membershipCardRepository.findActiveCardByUserId(loggedInUser.getId()).isPresent()) {
             throw new ApiException(

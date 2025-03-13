@@ -9,10 +9,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.config.pagination.PaginationMetaData;
+import pl.kamann.config.pagination.PaginationService;
+import pl.kamann.config.pagination.PaginationUtil;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
@@ -21,12 +22,10 @@ import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
-import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AppUserService;
-import pl.kamann.services.factory.UserFactory;
-import pl.kamann.utility.EntityLookupService;
-import pl.kamann.config.pagination.PaginationService;
-import pl.kamann.config.pagination.PaginationUtil;
+import pl.kamann.config.exception.services.RoleLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 
 import java.util.List;
 import java.util.Set;
@@ -46,13 +45,7 @@ class AppUserServiceTest {
     private AuthUserRepository authUserRepository;
 
     @Mock
-    private RoleRepository roleRepository;
-
-    @Mock
     private AppUserMapper appUserMapper;
-
-    @Mock
-    private EntityLookupService entityLookupService;
 
     @Mock
     private PaginationService paginationService;
@@ -61,10 +54,13 @@ class AppUserServiceTest {
     private PaginationUtil paginationUtil;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private UserLookupService userLookupService;
 
     @Mock
-    private UserFactory userFactory;
+    private ValidationService validationService;
+
+    @Mock
+    private RoleLookupService roleLookupService;
 
     @InjectMocks
     private AppUserService appUserService;
@@ -159,14 +155,14 @@ class AppUserServiceTest {
                 .build();
         authUser.setAppUser(user);
 
-        when(entityLookupService.findUserById(userId)).thenReturn(user);
+        when(userLookupService.findUserById(userId)).thenReturn(user);
         var userDto = new AppUserDto(userId, authUser.getEmail(), user.getFirstName(), user.getLastName(), authUser.getStatus().name(), user.getPhone());
         when(appUserMapper.toAppUserDto(user)).thenReturn(userDto);
 
         var result = appUserService.getUserById(userId);
 
         assertEquals(userDto, result);
-        verify(entityLookupService).findUserById(userId);
+        verify(userLookupService).findUserById(userId);
         verify(appUserMapper).toAppUserDto(user);
     }
 
@@ -183,14 +179,14 @@ class AppUserServiceTest {
                 .authUser(authUser)
                 .build();
 
-        when(entityLookupService.findUserByIdWithAuth(userId)).thenReturn(user);
+        when(userLookupService.findUserByIdWithAuth(userId)).thenReturn(user);
         when(appUserRepository.save(user)).thenReturn(user);
 
         appUserService.changeUserStatus(userId, AuthUserStatus.ACTIVE);
 
         assertEquals(AuthUserStatus.ACTIVE, authUser.getStatus());
 
-        verify(entityLookupService).findUserByIdWithAuth(userId);
+        verify(userLookupService).findUserByIdWithAuth(userId);
         verify(appUserRepository).save(user);
     }
 
@@ -205,14 +201,14 @@ class AppUserServiceTest {
                 .authUser(authUser)
                 .build();
 
-        when(entityLookupService.findUserByIdWithAuth(userId)).thenReturn(user);
+        when(userLookupService.findUserByIdWithAuth(userId)).thenReturn(user);
         when(appUserRepository.save(user)).thenReturn(user);
 
         appUserService.changeUserStatus(userId, AuthUserStatus.INACTIVE);
 
         assertEquals(AuthUserStatus.INACTIVE, authUser.getStatus());
 
-        verify(entityLookupService).findUserByIdWithAuth(userId);
+        verify(userLookupService).findUserByIdWithAuth(userId);
         verify(appUserRepository).save(user);
     }
 
@@ -221,7 +217,7 @@ class AppUserServiceTest {
         Pageable pageable = Pageable.unpaged();
         Role role = new Role(RoleCodes.INSTRUCTOR.name());
 
-        when(entityLookupService.findRoleByName(role.getName())).thenReturn(role);
+        when(roleLookupService.findRoleByName(role.getName())).thenReturn(role);
         when(authUserRepository.findByRolesContaining(role, pageable)).thenReturn(Page.empty(pageable));
         when(appUserMapper.toPaginatedResponseDto(any())).thenReturn(new PaginatedResponseDto<>(List.of(), new PaginationMetaData(0, 0)));
 

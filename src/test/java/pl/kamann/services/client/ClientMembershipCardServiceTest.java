@@ -13,7 +13,7 @@ import pl.kamann.entities.membershipcard.MembershipCardAction;
 import pl.kamann.entities.membershipcard.MembershipCardType;
 import pl.kamann.repositories.MembershipCardRepository;
 import pl.kamann.services.MembershipCardService;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -32,7 +32,7 @@ class ClientMembershipCardServiceTest {
     private MembershipCardService membershipCardService;
 
     @Mock
-    private EntityLookupService lookupService;
+    private UserLookupService userLookupService;
 
     @InjectMocks
     private ClientMembershipCardService clientMembershipCardService;
@@ -54,8 +54,8 @@ class ClientMembershipCardServiceTest {
                 .active(false)
                 .build();
 
-        when(lookupService.getLoggedInUser()).thenReturn(client);
-        when(lookupService.findUserById(client.getId())).thenReturn(client);
+        when(userLookupService.getLoggedInUser()).thenReturn(client);
+        when(userLookupService.findUserById(client.getId())).thenReturn(client);
         when(membershipCardRepository.findById(cardId)).thenReturn(Optional.of(cardTemplate));
         when(membershipCardRepository.findActiveCardByUserId(client.getId())).thenReturn(Optional.empty());
         when(membershipCardRepository.save(any(MembershipCard.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -79,8 +79,8 @@ class ClientMembershipCardServiceTest {
         client.setId(1L);
         MembershipCard activeCard = MembershipCard.builder().active(true).build();
 
-        when(lookupService.getLoggedInUser()).thenReturn(client);
-        when(lookupService.findUserById(client.getId())).thenReturn(client);
+        when(userLookupService.getLoggedInUser()).thenReturn(client);
+        when(userLookupService.findUserById(client.getId())).thenReturn(client);
         when(membershipCardRepository.findActiveCardByUserId(client.getId())).thenReturn(Optional.of(activeCard));
 
         ApiException exception = assertThrows(ApiException.class, () -> clientMembershipCardService.requestMembershipCard(cardId));
@@ -203,7 +203,7 @@ class ClientMembershipCardServiceTest {
         AppUser client = new AppUser();
         client.setId(1L);
 
-        when(lookupService.getLoggedInUser()).thenReturn(client);
+        when(userLookupService.getLoggedInUser()).thenReturn(client);
         when(membershipCardRepository.findById(cardId)).thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class, () -> clientMembershipCardService.requestMembershipCard(cardId));
@@ -216,7 +216,7 @@ class ClientMembershipCardServiceTest {
     void requestMembershipCardShouldThrowExceptionWhenUserLookupFails() {
         Long cardId = 1L;
 
-        when(lookupService.getLoggedInUser()).thenThrow(new ApiException("User not logged in.", HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
+        when(userLookupService.getLoggedInUser()).thenThrow(new ApiException("User not logged in.", HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
 
         ApiException exception = assertThrows(ApiException.class, () -> clientMembershipCardService.requestMembershipCard(cardId));
 
@@ -232,7 +232,7 @@ class ClientMembershipCardServiceTest {
         MembershipCard activeCard1 = new MembershipCard();
         MembershipCard activeCard2 = new MembershipCard();
 
-        when(lookupService.getLoggedInUser()).thenReturn(client);
+        when(userLookupService.getLoggedInUser()).thenReturn(client);
         when(membershipCardRepository.findActiveCardByUserId(client.getId())).thenReturn(Optional.of(activeCard1), Optional.of(activeCard2));
 
         ApiException exception = assertThrows(ApiException.class, () -> clientMembershipCardService.requestMembershipCard(cardId));

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
@@ -13,6 +14,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.exception.handler.ExceptionHandlerService;
+import pl.kamann.config.exception.services.UserLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
@@ -21,7 +25,6 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
 import pl.kamann.testcontainers.config.TestContainersConfig;
-import pl.kamann.utility.EntityLookupService;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,7 +39,7 @@ public class ConfirmUserServiceTest {
     private JwtUtils jwtUtils;
 
     @Mock
-    private EntityLookupService lookupService;
+    private ExceptionHandlerService exceptionHandlerService;
 
     @Mock
     private TokenService tokenService;
@@ -53,6 +56,9 @@ public class ConfirmUserServiceTest {
     @Mock
     private EmailSender emailSender;
 
+    @Mock
+    private UserLookupService userLookupService;
+
     @Test
     public void shouldConfirmAccount() {
         String email = "user@example.com";
@@ -67,7 +73,7 @@ public class ConfirmUserServiceTest {
         Mockito.when(jwtUtils.validateToken(Mockito.anyString())).thenReturn(true);
         Mockito.when(jwtUtils.isTokenTypeValid(Mockito.anyString(), Mockito.any())).thenReturn(true);
         Mockito.when(jwtUtils.extractEmail(Mockito.anyString())).thenReturn(email);
-        Mockito.when(lookupService.findUserByEmail(email)).thenReturn(appUser);
+        Mockito.when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
         Mockito.when(appUserRepository.existsByAuthUser(authUser)).thenReturn(false);
 
         Mockito.when(appUserRepository.save(Mockito.any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -87,9 +93,9 @@ public class ConfirmUserServiceTest {
         String invalidToken = "invalid_token";
         Mockito.when(jwtUtils.validateToken(invalidToken)).thenReturn(false);
 
-        Mockito.doNothing().when(lookupService).handleInvalidTokenException();
+        Mockito.doNothing().when(exceptionHandlerService).handleInvalidTokenException();
         confirmUserService.confirmUserAccount(invalidToken);
-        Mockito.verify(lookupService, Mockito.times(1)).handleInvalidTokenException();
+        Mockito.verify(exceptionHandlerService, Mockito.times(1)).handleInvalidTokenException();
     }
 
     @Test
@@ -100,11 +106,11 @@ public class ConfirmUserServiceTest {
         Mockito.when(jwtUtils.validateToken(validToken)).thenReturn(true);
         Mockito.when(jwtUtils.isTokenTypeValid(validToken, TokenType.CONFIRMATION)).thenReturn(true);
         Mockito.when(jwtUtils.extractEmail(validToken)).thenReturn(email);
-        Mockito.when(lookupService.findUserByEmail(email)).thenReturn(null);
+        Mockito.when(userLookupService.findUserByEmail(email)).thenReturn(null);
 
-        Mockito.doNothing().when(lookupService).handleUserNotFoundException(email);
+        Mockito.doNothing().when(exceptionHandlerService).handleUserNotFoundException(email);
         confirmUserService.confirmUserAccount(validToken);
-        Mockito.verify(lookupService, Mockito.times(1)).handleUserNotFoundException(email);
+        Mockito.verify(exceptionHandlerService, Mockito.times(1)).handleUserNotFoundException(email);
     }
 
     @Test
@@ -139,7 +145,7 @@ public class ConfirmUserServiceTest {
         Mockito.when(jwtUtils.validateToken(validToken)).thenReturn(true);
         Mockito.when(jwtUtils.isTokenTypeValid(validToken, TokenType.CONFIRMATION)).thenReturn(true);
         Mockito.when(jwtUtils.extractEmail(validToken)).thenReturn(email);
-        Mockito.when(lookupService.findUserByEmail(email)).thenReturn(appUser);
+        Mockito.when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
         Mockito.when(authUserRepository.save(authUser)).thenReturn(authUser);
 
         confirmUserService.confirmUserAccount(validToken);
@@ -162,12 +168,12 @@ public class ConfirmUserServiceTest {
         Mockito.when(jwtUtils.validateToken(Mockito.anyString())).thenReturn(true);
         Mockito.when(jwtUtils.isTokenTypeValid(Mockito.anyString(), Mockito.any())).thenReturn(true);
         Mockito.when(jwtUtils.extractEmail(Mockito.anyString())).thenReturn(email);
-        Mockito.when(lookupService.findUserByEmail(email)).thenReturn(appUser);
+        Mockito.when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
 
         Mockito.doThrow(new ApiException("User with email " + email + " is already confirmed",
                         HttpStatus.BAD_REQUEST,
                         AuthCodes.USER_ALREADY_CONFIRMED.name()))
-                .when(lookupService).handleUserAlreadyConfirmedException(email);
+                .when(exceptionHandlerService).handleUserAlreadyConfirmedException(email);
 
         ApiException exception = assertThrows(ApiException.class, () ->
                 confirmUserService.confirmUserAccount("valid_token")
@@ -175,6 +181,6 @@ public class ConfirmUserServiceTest {
 
         assertTrue(exception.getMessage().contains("User with email " + email + " is already confirmed"));
 
-        Mockito.verify(lookupService).handleUserAlreadyConfirmedException(email);
+        Mockito.verify(exceptionHandlerService).handleUserAlreadyConfirmedException(email);
     }
 }

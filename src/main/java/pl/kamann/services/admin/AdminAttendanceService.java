@@ -15,7 +15,7 @@ import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.AttendanceMapper;
 import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.EventLookupService;
 
 import java.util.Map;
 
@@ -25,11 +25,11 @@ import java.util.Map;
 public class AdminAttendanceService {
 
     private final AttendanceRepository attendanceRepository;
-    private final EntityLookupService entityLookupService;
     private final AttendanceMapper attendanceMapper;
+    private final EventLookupService eventLookupService;
 
     public void cancelClientAttendance(Long eventId, Long clientId) {
-        OccurrenceEvent event = entityLookupService.findOccurrenceEventByOccurrenceEventId(eventId);
+        OccurrenceEvent event = eventLookupService.findOccurrenceEventByOccurrenceEventId(eventId);
         Attendance attendance = attendanceRepository.findByOccurrenceEventAndUserId(event, clientId)
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found for event and client",
@@ -41,7 +41,7 @@ public class AdminAttendanceService {
     }
 
     public void markAttendance(Long eventId, Long clientId, AttendanceStatus status) {
-        OccurrenceEvent event = entityLookupService.findOccurrenceEventByOccurrenceEventId(eventId);
+        OccurrenceEvent event = eventLookupService.findOccurrenceEventByOccurrenceEventId(eventId);
         Attendance attendance = attendanceRepository.findByOccurrenceEventAndUserId(event, clientId)
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found for event and client",

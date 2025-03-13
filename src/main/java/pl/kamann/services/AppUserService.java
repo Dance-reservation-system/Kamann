@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.config.pagination.PaginationMetaData;
+import pl.kamann.config.pagination.PaginationService;
+import pl.kamann.config.pagination.PaginationUtil;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
@@ -18,9 +20,9 @@ import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
-import pl.kamann.utility.EntityLookupService;
-import pl.kamann.config.pagination.PaginationService;
-import pl.kamann.config.pagination.PaginationUtil;
+import pl.kamann.config.exception.services.RoleLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 
 @Service
 @RequiredArgsConstructor
@@ -29,12 +31,13 @@ public class AppUserService implements UserDetailsService {
     private final AppUserRepository appUserRepository;
     private final AppUserMapper appUserMapper;
 
-    private final EntityLookupService entityLookupService;
+    private final ValidationService validationService;
+    private final UserLookupService userLookupService;
+    private final RoleLookupService roleLookupService;
 
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
     private final AuthUserRepository authUserRepository;
-
 
     public PaginatedResponseDto<AppUserDto> getUsers(Pageable pageable, String roleName) {
         pageable = paginationService.validatePageable(pageable);
@@ -44,7 +47,7 @@ public class AppUserService implements UserDetailsService {
         if (roleName == null || roleName.isEmpty()) {
             pagedAuthUsers = authUserRepository.findAll(pageable);
         } else {
-            Role role = entityLookupService.findRoleByName(roleName);
+            Role role = roleLookupService.findRoleByName(roleName);
             pagedAuthUsers = authUserRepository.findUsersByRoleWithRoles(pageable, role);
         }
 
@@ -52,22 +55,21 @@ public class AppUserService implements UserDetailsService {
     }
 
     private AppUserDto mapAuthUserToAppUserDto(AuthUser authUser) {
-        AppUser appUser = entityLookupService.findAppUserByAuthUser(authUser);
+        AppUser appUser = userLookupService.findAppUserByAuthUser(authUser);
         return appUserMapper.toAppUserDto(appUser);
     }
 
     public AppUserDto getUserById(Long id) {
-        AppUser user = entityLookupService.findUserById(id);
+        AppUser user = userLookupService.findUserById(id);
         return appUserMapper.toAppUserDto(user);
     }
 
 
     @Transactional
     public AppUserDto changeUserStatus(Long userId, AuthUserStatus status) {
-        entityLookupService.validateUserId(userId);
-        entityLookupService.validateUserStatus(status);
+        validationService.validateUserStatus(status);
 
-        AppUser user = entityLookupService.findUserByIdWithAuth(userId);
+        AppUser user = userLookupService.findUserByIdWithAuth(userId);
         AuthUser authUser = user.getAuthUser();
         authUser.setStatus(status);
         appUserRepository.save(user);
@@ -84,7 +86,7 @@ public class AppUserService implements UserDetailsService {
     }
 
     public PaginatedResponseDto<AppUserDto> getUsersByRole(String roleName, Pageable pageable) {
-        Role role = entityLookupService.findRoleByName(roleName);
+        Role role = roleLookupService.findRoleByName(roleName);
 
         Page<AuthUser> authUsers = authUserRepository.findByRolesContaining(role, pageable);
         Page<AppUser> users = authUsers.map(AuthUser::getAppUser);

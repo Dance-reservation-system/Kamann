@@ -20,15 +20,15 @@ import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
-import pl.kamann.mappers.OccurrenceEventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
 import pl.kamann.services.EventTypeService;
 import pl.kamann.services.EventValidationService;
 import pl.kamann.services.NotificationService;
-import pl.kamann.utility.EntityLookupService;
 import pl.kamann.config.pagination.PaginationService;
 import pl.kamann.config.pagination.PaginationUtil;
+import pl.kamann.config.exception.services.EventLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -46,22 +46,21 @@ public class AdminEventService {
     private final EventValidationService eventValidationService;
 
     private final OccurrenceEventRepository occurrenceEventRepository;
-    private final OccurrenceEventMapper occurrenceEventMapper;
 
     private final NotificationService notificationService;
-    private final EntityLookupService entityLookupService;
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
 
-    private final EntityLookupService lookupService;
+    private final UserLookupService userLookupService;
+    private final EventLookupService eventLookupService;
 
     @Transactional
     public CreateEventResponse createEvent(CreateEventRequest request) {
         eventValidationService.validateCreate(request);
 
-        Event event = eventMapper.toEvent(request, lookupService);
+        Event event = eventMapper.toEvent(request, userLookupService);
 
-        event.setCreatedBy(entityLookupService.findUserById(request.createdById()));
+        event.setCreatedBy(userLookupService.findUserById(request.createdById()));
 
         EventType eventType = eventTypeService.findOrCreateEventType(request.eventTypeName());
         event.setEventType(eventType);
@@ -84,7 +83,7 @@ public class AdminEventService {
 
     @Transactional
     public EventUpdateResponse updateEvent(Long id, EventUpdateRequest requestDto) {
-        Event event = entityLookupService.findEventById(id);
+        Event event = eventLookupService.findEventById(id);
 
         eventValidationService.validateUpdate(requestDto, event);
 
@@ -96,7 +95,7 @@ public class AdminEventService {
 
     @Transactional
     public void deleteEvent(Long id, boolean force) {
-        Event event = entityLookupService.findEventById(id);
+        Event event = eventLookupService.findEventById(id);
 
         if (!force && occurrenceEventRepository.existsByEvent(event)) {
             throw new ApiException("Cannot delete event with occurrences unless forced",
@@ -109,7 +108,7 @@ public class AdminEventService {
 
     @Transactional
     public void cancelEvent(Long id, EventStatus eventStatus) {
-        Event event = entityLookupService.findEventById(id);
+        Event event = eventLookupService.findEventById(id);
         LocalDateTime now = LocalDateTime.now();
 
         if (event.getStatus() == EventStatus.CANCELED) {
@@ -140,7 +139,7 @@ public class AdminEventService {
         event.setDurationMinutes(requestDto.durationMinutes());
         event.setRrule(requestDto.rrule());
         event.setMaxParticipants(requestDto.maxParticipants());
-        event.setInstructor(requestDto.instructorId() != null ? entityLookupService.findUserById(requestDto.instructorId()) : null);
+        event.setInstructor(requestDto.instructorId() != null ? userLookupService.findUserById(requestDto.instructorId()) : null);
     }
 
     public List<OccurrenceEvent> generateOccurrences(Event event) {
@@ -194,7 +193,7 @@ public class AdminEventService {
     }
 
     public EventDto getEventDtoById(Long eventId) {
-        Event eventById = entityLookupService.findEventById(eventId);
+        Event eventById = eventLookupService.findEventById(eventId);
 
         return eventMapper.toEventDto(eventById);
     }

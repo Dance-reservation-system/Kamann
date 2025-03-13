@@ -20,9 +20,9 @@ import pl.kamann.mappers.EventMapper;
 import pl.kamann.mappers.OccurrenceEventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
-import pl.kamann.utility.EntityLookupService;
 import pl.kamann.config.pagination.PaginationService;
 import pl.kamann.config.pagination.PaginationUtil;
+import pl.kamann.config.exception.services.UserLookupService;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +33,7 @@ public class ClientEventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
 
-    private final EntityLookupService lookupService;
+    private final UserLookupService userLookupService;
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
 
@@ -45,7 +45,7 @@ public class ClientEventService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
         pageable = paginationService.validatePageable(pageable);
 
-        AppUser loggedInUser = lookupService.getLoggedInUser();
+        AppUser loggedInUser = userLookupService.getLoggedInUser();
 
         Page<OccurrenceEvent> pagedOccurrences = occurrenceEventRepository.findFilteredOccurrences(
                 scope.name(), loggedInUser, pageable);

@@ -16,7 +16,7 @@ import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.AttendanceMapper;
 import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.EventLookupService;
 
 import java.util.List;
 import java.util.Map;
@@ -31,10 +31,10 @@ class AdminAttendanceServiceTest {
     private AttendanceRepository attendanceRepository;
 
     @Mock
-    private EntityLookupService entityLookupService;
+    private AttendanceMapper attendanceMapper;
 
     @Mock
-    private AttendanceMapper attendanceMapper;
+    private EventLookupService eventLookupService;
 
     @InjectMocks
     private AdminAttendanceService adminAttendanceService;
@@ -51,7 +51,7 @@ class AdminAttendanceServiceTest {
 
         OccurrenceEvent event = new OccurrenceEvent();
 
-        when(entityLookupService.findOccurrenceEventByOccurrenceEventId(eventId)).thenReturn(event);
+        when(eventLookupService.findOccurrenceEventByOccurrenceEventId(eventId)).thenReturn(event);
 
         ApiException exception = assertThrows(ApiException.class,
                 () -> adminAttendanceService.cancelClientAttendance(eventId, clientId));
@@ -67,7 +67,7 @@ class AdminAttendanceServiceTest {
 
         var event = new Event();
 
-        when(entityLookupService.findEventById(eventId)).thenReturn(event);
+        when(eventLookupService.findEventById(eventId)).thenReturn(event);
 
         ApiException exception = assertThrows(ApiException.class,
                 () -> adminAttendanceService.markAttendance(eventId, clientId, AttendanceStatus.PRESENT));

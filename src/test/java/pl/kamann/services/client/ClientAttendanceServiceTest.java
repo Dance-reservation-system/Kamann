@@ -4,12 +4,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.repositories.OccurrenceEventRepository;
-import pl.kamann.utility.EntityLookupService;
+import pl.kamann.config.exception.services.EventLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 
 import java.time.LocalDateTime;
 
@@ -19,22 +18,18 @@ import static org.mockito.Mockito.mock;
 
 public class ClientAttendanceServiceTest {
 
-    private AttendanceRepository attendanceRepository;
-    private OccurrenceEventRepository occurrenceEventRepository;
     private ClientMembershipCardService clientMembershipCardService;
-    private EntityLookupService lookupService;
     private ClientAttendanceService attendanceService;
 
-    private Attendance testAttendance;
     private OccurrenceEvent testOccurrence;
+    private UserLookupService userLookupService;
+    private EventLookupService eventLookupService;
 
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        attendanceRepository = mock(AttendanceRepository.class);
-        occurrenceEventRepository = mock(OccurrenceEventRepository.class);
-        lookupService = mock(EntityLookupService.class);
-        attendanceService = new ClientAttendanceService(attendanceRepository, lookupService, clientMembershipCardService);
+        AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
+        attendanceService = new ClientAttendanceService(attendanceRepository, clientMembershipCardService, eventLookupService, userLookupService);
 
         testOccurrence = OccurrenceEvent.builder()
                 .id(100L)
@@ -42,10 +37,6 @@ public class ClientAttendanceServiceTest {
                 .durationMinutes(60)
                 .maxParticipants(10)
                 .participants(new java.util.ArrayList<>())
-                .build();
-        testAttendance = Attendance.builder()
-                .id(10L)
-                .occurrenceEvent(testOccurrence)
                 .build();
     }
 
