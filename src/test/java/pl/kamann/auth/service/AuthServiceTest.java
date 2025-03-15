@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.exception.services.RoleLookupService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.login.LoginRequest;
@@ -72,6 +73,9 @@ class AuthServiceTest {
 
     @Mock
     private AppUserMapper appUserMapper;
+
+    @Mock
+    private RoleLookupService roleLookupService;
 
     @InjectMocks
     private AuthService authService;
@@ -195,6 +199,7 @@ class AuthServiceTest {
             user.getAuthUser().setId(2L);
             return user;
         });
+        when(roleLookupService.findRoleByName(any(String.class))).thenReturn(clientRole);
         when(appUserMapper.toAppUserDto(any(AppUser.class))).thenReturn(expectedDto);
 
         AppUserDto registeredUser = authService.registerClient(request);

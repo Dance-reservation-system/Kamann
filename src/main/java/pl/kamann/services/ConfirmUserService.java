@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ExceptionHandlerService;
+import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
@@ -36,13 +37,24 @@ public class ConfirmUserService {
 
     private final Map<String, ScheduledFuture<?>> deletionTasks = new ConcurrentHashMap<>();
     private final UserLookupService userLookupService;
+    private final ValidationService validationService;
 
     private void sendConfirmationEmail(AuthUser authUser, String token) {
         String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
 
         try {
-            emailSender.sendEmail(authUser.getEmail(), confirmationLink, Locale.ENGLISH, "registration");
-            log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
+            if(authUser.getRoles().stream().anyMatch(role -> role.getName().equals("INSTRUCTOR"))) {
+                AuthUser admin = authUserRepository.findAdminUser();
+                validationService.validateAuthUser(admin);
+
+                emailSender.sendEmail(admin.getEmail(), confirmationLink, Locale.ENGLISH, "admin.approval");
+                emailSender.sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "instructor.registration");
+
+                log.info("Confirmation email sent successfully to admin: {}", authUser.getEmail());
+            } else {
+                emailSender.sendEmail(authUser.getEmail(), confirmationLink, Locale.ENGLISH, "client.registration");
+                log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
+            }
         } catch (MessagingException e) {
             log.error("Error sending the confirmation email to user: {}", authUser.getEmail(), e);
             exceptionHandlerService.handleEmailSendingError();
@@ -120,5 +132,17 @@ public class ConfirmUserService {
         cancelDeletionTask(email);
 
         log.info("User account confirmed for: {}", user.getEmail());
+
+        sendConfirmationSuccessEmail(user);
+    }
+
+    private void sendConfirmationSuccessEmail(AuthUser authUser) {
+        try{
+            emailSender.sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "account.confirmed");
+            log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
+        } catch (MessagingException e) {
+            log.error("Error sending the account confirmed email to {}: {}", authUser.getEmail(), e.getMessage(), e);
+            exceptionHandlerService.handleEmailSendingError();
+        }
     }
 }

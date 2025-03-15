@@ -14,6 +14,9 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, Long> {
 
     Optional<AuthUser> findByEmail(String email);
 
+    @Query("SELECT u FROM AuthUser u JOIN u.roles r WHERE r.name = 'ADMIN'")
+    AuthUser findAdminUser();
+
     @Query("SELECT u FROM AuthUser u JOIN u.roles r WHERE r = :role")
     Page<AuthUser> findUsersByRoleWithRoles(Pageable pageable, @Param("role") Role role);
 

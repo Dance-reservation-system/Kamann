@@ -20,11 +20,14 @@ import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
 import pl.kamann.testcontainers.config.TestContainersConfig;
+
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -120,6 +123,7 @@ public class ConfirmUserServiceTest {
         AuthUser authUser = new AuthUser();
         authUser.setEmail(email);
         authUser.setEnabled(true);
+        authUser.setRoles(Set.of(new Role("CLIENT")));
 
         AppUser appUser = new AppUser();
         appUser.setAuthUser(authUser);
@@ -127,7 +131,7 @@ public class ConfirmUserServiceTest {
         confirmUserService.sendConfirmationEmail(authUser);
 
         Mockito.verify(emailSender, Mockito.times(0))
-                .sendEmail(Mockito.eq(authUser.getEmail()), Mockito.anyString(), Mockito.any(), Mockito.eq("registration"));
+                .sendEmail(Mockito.eq(authUser.getEmail()), Mockito.anyString(), Mockito.any(), Mockito.eq("client.registration"));
     }
 
     @Test

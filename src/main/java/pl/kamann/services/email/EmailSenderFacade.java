@@ -6,4 +6,5 @@ import java.util.Locale;
 
 public interface EmailSenderFacade {
     void sendEmail(String to, String confirmationLink, Locale userLocale, String type)throws MessagingException;
+    void sendEmailWithoutConfirmationLink(String to, Locale userLocale, String type) throws MessagingException;
 }
