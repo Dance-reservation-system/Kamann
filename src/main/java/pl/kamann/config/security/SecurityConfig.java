@@ -89,12 +89,23 @@ public class SecurityConfig {
 
     @Bean
     @Profile(value = "dev")
-    public SecurityFilterChain securityFilterChainDevOriented(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChainLocal(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        .requestMatchers(PUBLIC_URLS).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
                 )
                 .build();
     }
@@ -102,7 +113,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+
+        if (isDevOrProd()) {
+            configuration.setAllowedOrigins(List.of(
+                    "http://localhost:3000",
+                    "http://localhost:8080",
+                    "http://localhost"
+            ));
+        } else {
+            configuration.setAllowedOrigins(List.of(
+                    "https://kamann-production.up.railway.app:8080",
+                    "*"
+            ));
+        }
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -112,6 +136,11 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private boolean isDevOrProd() {
+        String activeProfile = System.getProperty("spring.profiles.active");
+        return "prod".equals(activeProfile) || "dev".equals(activeProfile);
     }
 
     @Bean
@@ -129,7 +158,11 @@ public class SecurityConfig {
                         .title("Dance dance")
                         .version("1.0")
                         .description("API Documentation"))
-                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"));
+                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
+                .servers(List.of(
+                        new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080"),
+                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app:8080")
+                ));
     }
 
     @Bean
