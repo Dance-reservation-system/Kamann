@@ -116,22 +116,36 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        if (isDevOrProd()) {
-            String activeProfile = System.getProperty("spring.profiles.active");
+        String activeProfile = System.getProperty("spring.profiles.active");
+        if (activeProfile == null) {
+            activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
+        }
 
-            if ("dev".equals(activeProfile)) {
-                configuration.setAllowedOrigins(List.of(
-                        "http://localhost:8080",
-                        "http://localhost:5173"
-                ));
-            } else if ("prod".equals(activeProfile)) {
-                configuration.setAllowedOrigins(List.of(
-                        "http://localhost:8080",
-                        "https://kamann-production.up.railway.app",
-                        "http://kamann-production.up.railway.app",
-                        "http://localhost:5173"
-                ));
-            }
+        if ("dev".equals(activeProfile)) {
+            configuration.setAllowedOrigins(List.of(
+                    "http://localhost:8080",
+                    "https://localhost:8080",
+                    "http://localhost:5173",
+                    "https://localhost:5173"
+            ));
+        } else if ("prod".equals(activeProfile)) {
+            configuration.setAllowedOrigins(List.of(
+                    "http://localhost:8080",
+                    "https://localhost:8080",
+                    "https://kamann-production.up.railway.app:8080",
+                    "http://kamann-production.up.railway.app:8080",
+                    "http://localhost:5173",
+                    "https://localhost:5173"
+            ));
+        } else {
+            configuration.setAllowedOrigins(List.of(
+                    "http://localhost:8080",
+                    "https://localhost:8080",
+                    "https://kamann-production.up.railway.app:8080",
+                    "http://kamann-production.up.railway.app:8080",
+                    "http://localhost:5173",
+                    "https://localhost:5173"
+            ));
         }
 
         configuration.addAllowedMethod("*");
@@ -166,7 +180,9 @@ public class SecurityConfig {
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
                 .servers(List.of(
                         new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080"),
-                        new io.swagger.v3.oas.models.servers.Server().url("http://kamann-production.up.railway.app")
+                        new io.swagger.v3.oas.models.servers.Server().url("https://localhost:8080"),
+                        new io.swagger.v3.oas.models.servers.Server().url("http://kamann-production.up.railway.app:8080"),
+                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app:8080")
                 ));
     }
 
