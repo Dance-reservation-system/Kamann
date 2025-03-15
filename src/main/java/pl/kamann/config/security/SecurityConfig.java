@@ -142,7 +142,7 @@ public class SecurityConfig {
     }
 
     private boolean isDevOrProd() {
-        String activeProfile = System.getProperty("spring.profiles.active");
+        String activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
         return "prod".equals(activeProfile) || "dev".equals(activeProfile);
     }
 
