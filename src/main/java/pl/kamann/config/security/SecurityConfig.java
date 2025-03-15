@@ -115,16 +115,19 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         if (isDevOrProd()) {
-            configuration.setAllowedOrigins(List.of(
-                    "http://localhost:3000",
-                    "http://localhost:8080",
-                    "http://localhost"
-            ));
-        } else {
-            configuration.setAllowedOrigins(List.of(
-                    "https://kamann-production.up.railway.app:8080",
-                    "*"
-            ));
+            String activeProfile = System.getProperty("spring.profiles.active");
+
+            if ("dev".equals(activeProfile)) {
+                configuration.setAllowedOrigins(List.of(
+                        "http://localhost:8080",
+                        "http://localhost:5173"
+                ));
+            } else if ("prod".equals(activeProfile)) {
+                configuration.setAllowedOrigins(List.of(
+                        "https://kamann-production.up.railway.app",
+                        "http://localhost:5173"
+                ));
+            }
         }
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
@@ -161,7 +164,7 @@ public class SecurityConfig {
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
                 .servers(List.of(
                         new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080"),
-                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app:8080")
+                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app")
                 ));
     }
 
