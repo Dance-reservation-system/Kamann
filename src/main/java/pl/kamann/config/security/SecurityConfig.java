@@ -145,11 +145,6 @@ public class SecurityConfig {
         return source;
     }
 
-    private boolean isDevOrProd() {
-        String activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
-        return "prod".equals(activeProfile) || "dev".equals(activeProfile);
-    }
-
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -167,7 +162,6 @@ public class SecurityConfig {
                         .description("API Documentation"))
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
                 .servers(List.of(
-                    new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080").description("Local Development Server"),
                     new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app").description("Production Server")
 
                 ));
