@@ -110,7 +110,7 @@ public class JwtUtils {
         return tokenType.equals(expectedTokenType);
     }
 
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         Date expiration = extractClaim(token, Claims::getExpiration);
         return expiration.before(new Date());
     }
@@ -120,5 +120,20 @@ public class JwtUtils {
         return (bearerToken != null && bearerToken.startsWith("Bearer "))
                 ? Optional.of(bearerToken.substring(7))
                 : Optional.empty();
+    }
+
+    public String refreshToken(String token) {
+        if (validateToken(token)) {
+            String email = extractEmail(token);
+            Set<Role> roles = extractClaim(token, claims -> new HashSet<>((List<Role>) claims.get("roles")));
+            return generateToken(email, roles);
+        } else {
+            throw new JwtException("Invalid or expired token");
+        }
+    }
+
+    public boolean isTokenFromUser(String token, String userEmail) {
+        String email = extractEmail(token);
+        return email.equals(userEmail);
     }
 }

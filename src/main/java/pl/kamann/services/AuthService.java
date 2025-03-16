@@ -1,5 +1,6 @@
 package pl.kamann.services;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
+import pl.kamann.dtos.RefreshTokenResponse;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
@@ -30,6 +32,10 @@ import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.factory.UserFactory;
 import pl.kamann.config.exception.services.ValidationService;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -57,7 +63,12 @@ public class AuthService {
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
             log.info("User logged in successfully: email={}", authUser.getEmail());
-            return new LoginResponse(jwtUtils.generateToken(authUser.getEmail(), authUser.getRoles()));
+
+            // Generate JWT token
+            String token = jwtUtils.generateToken(authUser.getEmail(), authUser.getRoles());
+
+            return new LoginResponse(token);
+
         } catch (DisabledException e) {
             log.warn("Attempted login with unconfirmed email: {}", request.email());
             throw new ApiException(
@@ -135,5 +146,21 @@ public class AuthService {
                         AuthCodes.USER_NOT_FOUND.name()));
 
         return appUserMapper.toAppUserResponseDto(appUser);
+    }
+
+    public RefreshTokenResponse refreshToken(String oldToken) {
+        try {
+            if (jwtUtils.validateToken(oldToken)) {
+                String email = jwtUtils.extractEmail(oldToken);
+                Set<Role> roles = jwtUtils.extractClaim(oldToken, claims -> new HashSet<>((List<Role>) claims.get("roles")));
+                String newToken = jwtUtils.generateToken(email, roles);
+                return new RefreshTokenResponse(newToken);
+            } else {
+                throw new JwtException("Invalid or expired token");
+            }
+        } catch (JwtException e) {
+            log.error("Token refresh failed for token: {}", oldToken);
+            throw new ApiException("Failed to refresh token", HttpStatus.UNAUTHORIZED, AuthCodes.UNAUTHORIZED.name());
+        }
     }
 }

@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.dtos.AppUserDto;
+import pl.kamann.dtos.RefreshTokenRequest;
+import pl.kamann.dtos.RefreshTokenResponse;
 import pl.kamann.dtos.ResetPasswordRequest;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
@@ -24,6 +26,7 @@ import pl.kamann.services.PasswordResetService;
 @Validated
 @Slf4j
 @Tag(name = "1. login", description = "Auth controller")
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final ConfirmUserService confirmUserService;
@@ -34,6 +37,14 @@ public class AuthController {
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
+    }
+
+    @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh JWT Token", description = "Refreshes the JWT token when the old token is expired.")
+    public ResponseEntity<RefreshTokenResponse> refreshToken(@RequestBody @Valid RefreshTokenRequest request) {
+        RefreshTokenResponse refreshedToken = authService.refreshToken(request.token());
+
+        return ResponseEntity.status(HttpStatus.OK).body(refreshedToken);
     }
 
     @PostMapping("/register-client")
