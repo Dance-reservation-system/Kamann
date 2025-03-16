@@ -128,7 +128,7 @@ public class SecurityConfig {
             ));
         } else if ("prod".equals(activeProfile)) {
             configuration.setAllowedOrigins(List.of(
-                "https://kamann-production.up.railway.app:8080"
+                "https://kamann-production.up.railway.app"
 
             ));
         } else {
