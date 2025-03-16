@@ -67,6 +67,8 @@ public class JwtUtils {
     }
 
     public String extractEmail(String token) {
+        validateToken(token);
+
         return extractClaim(token, Claims::getSubject);
     }
 
@@ -88,26 +90,26 @@ public class JwtUtils {
         }
     }
 
-    public boolean validateToken(String token) {
+    public boolean validateToken(String token, TokenType... tokenType) {
         try {
-            Jwts.parserBuilder()
+            Claims claims = Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
-                    .parseClaimsJws(token);
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            if(tokenType.length > 0) {
+                String tokenTypeString = claims.get("TokenType", String.class);
+                if(!tokenTypeString.equals(tokenType[0].name())) {
+                    return false;
+                }
+            }
 
             return !isTokenExpired(token);
         } catch (JwtException e) {
             log.error("JWT validation failed: {}", e.getMessage());
         }
         return false;
-    }
-
-    public boolean isTokenTypeValid(String token, TokenType expectedTokenType) {
-        String tokenTypeString = extractClaim(token, claims -> claims.get("TokenType", String.class));
-
-        TokenType tokenType = TokenType.valueOf(tokenTypeString);
-
-        return tokenType.equals(expectedTokenType);
     }
 
     private boolean isTokenExpired(String token) {

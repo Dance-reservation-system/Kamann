@@ -86,7 +86,7 @@ public class PasswordResetService {
 
         log.info("Reset password attempt for token: {}", token);
 
-        if(jwtUtils.validateToken(token) && jwtUtils.isTokenTypeValid(token, TokenType.RESET_PASSWORD)) {
+        if(jwtUtils.validateToken(token, TokenType.RESET_PASSWORD)) {
             String email = jwtUtils.extractEmail(token);
 
             AuthUser authUser = authUserRepository.findByEmail(email).orElseThrow(() ->
