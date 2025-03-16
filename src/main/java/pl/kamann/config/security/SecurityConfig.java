@@ -52,11 +52,11 @@ public class SecurityConfig {
     };
 
     private static final String[] CLIENT_URLS = {
-            "/api/client/**",
-            "/api/client/events/**",
-            "/api/client/attendance/**",
-            "/api/client/occurrences/**",
-            "/api/client/membership-cards/**"
+            "/api/v1/client/**",
+            "/api/v1/client/events/**",
+            "/api/v1/client/attendance/**",
+            "/api/v1/client/occurrences/**",
+            "/api/v1/client/membership-cards/**"
     };
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
