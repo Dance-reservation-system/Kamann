@@ -124,33 +124,21 @@ public class SecurityConfig {
         if ("dev".equals(activeProfile)) {
             configuration.setAllowedOrigins(List.of(
                     "http://localhost:8080",
-                    "https://localhost:8080",
-                    "http://localhost:5173",
-                    "https://localhost:5173"
+                    "http://localhost:5173"
             ));
         } else if ("prod".equals(activeProfile)) {
             configuration.setAllowedOrigins(List.of(
-                    "http://localhost:8080",
-                    "https://localhost:8080",
-                    "https://kamann-production.up.railway.app:8080",
-                    "http://kamann-production.up.railway.app:8080",
-                    "http://localhost:5173",
-                    "https://localhost:5173"
+                "https://kamann-production.up.railway.app:8080"
+
             ));
         } else {
             configuration.setAllowedOrigins(List.of(
-                    "http://localhost:8080",
-                    "https://localhost:8080",
-                    "https://kamann-production.up.railway.app:8080",
-                    "http://kamann-production.up.railway.app:8080",
-                    "http://localhost:5173",
-                    "https://localhost:5173"
             ));
         }
 
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
-        configuration.setAllowCredentials(false);
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
