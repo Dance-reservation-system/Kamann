@@ -167,10 +167,9 @@ public class SecurityConfig {
                         .description("API Documentation"))
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
                 .servers(List.of(
-                        new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080"),
-                        new io.swagger.v3.oas.models.servers.Server().url("https://localhost:8080"),
-                        new io.swagger.v3.oas.models.servers.Server().url("http://kamann-production.up.railway.app:8080"),
-                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app:8080")
+                    new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080").description("Local Development Server"),
+                    new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app").description("Production Server")
+
                 ));
     }
 
