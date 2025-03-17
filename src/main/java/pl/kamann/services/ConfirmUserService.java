@@ -1,21 +1,24 @@
 package pl.kamann.services;
 
-import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.AuthCodes;
+import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.exception.handler.ExceptionHandlerService;
+import pl.kamann.config.exception.services.UserLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.entities.appuser.TokenType;
-import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
-import pl.kamann.config.exception.services.UserLookupService;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -31,21 +34,29 @@ public class ConfirmUserService {
     private final JwtUtils jwtUtils;
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
     private final AuthUserRepository authUserRepository;
-    private final AppUserRepository appUserRepository;
     private final ExceptionHandlerService exceptionHandlerService;
 
     private final Map<String, ScheduledFuture<?>> deletionTasks = new ConcurrentHashMap<>();
+    private final ValidationService validationService;
     private final UserLookupService userLookupService;
 
     private void sendConfirmationEmail(AuthUser authUser, String token) {
         String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
+        validationService.validateAuthUser(authUser);
 
-        try {
-            emailSender.sendEmail(authUser.getEmail(), confirmationLink, Locale.ENGLISH, "registration");
+        if(authUser.getRoles().stream().anyMatch(role -> role.getName().equals("INSTRUCTOR"))) {
+            List<AuthUser> adminUsers = authUserRepository.findAdminUser();
+            for (AuthUser adminUser: adminUsers){
+                validationService.validateAuthUser(adminUser);
+                emailSender.sendEmail(adminUser.getEmail(), confirmationLink, Locale.ENGLISH, "admin.approval");
+            }
+
+            emailSender.sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "instructor.registration");
+
+            log.info("Confirmation email sent successfully to admin: {}", authUser.getEmail());
+        } else {
+            emailSender.sendEmail(authUser.getEmail(), confirmationLink, Locale.ENGLISH, "client.registration");
             log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
-        } catch (MessagingException e) {
-            log.error("Error sending the confirmation email to user: {}", authUser.getEmail(), e);
-            exceptionHandlerService.handleEmailSendingError();
         }
     }
 
@@ -87,38 +98,41 @@ public class ConfirmUserService {
     public void confirmUserAccount(String token) {
         log.info("Confirming user account for token: {}", token);
 
-        if (!jwtUtils.validateToken(token)) {
-            exceptionHandlerService.handleInvalidTokenException();
+        if (jwtUtils.validateToken(token, TokenType.CONFIRMATION)) {
+            String email = jwtUtils.extractEmail(token);
+
+            AuthUser user = Optional.ofNullable(userLookupService.findUserByEmail(email)).map(AppUser::getAuthUser).orElseThrow(() ->
+                    new ApiException(
+                            "User not found",
+                            HttpStatus.NOT_FOUND,
+                            AuthCodes.USER_NOT_FOUND.name()
+                    )
+            );
+
+            if (user.isEnabled()) {
+                exceptionHandlerService.handleUserAlreadyConfirmedException(email);
+            }
+
+            user.setEnabled(true);
+            user.setStatus(AuthUserStatus.ACTIVE);
+            authUserRepository.save(user);
+
+            cancelDeletionTask(email);
+
+            log.info("User account confirmed for: {}", user.getEmail());
+
+            sendConfirmationSuccessEmail(user);
+        } else {
+            throw new ApiException(
+                    "Invalid confirmation token.",
+                    HttpStatus.BAD_REQUEST,
+                    AuthCodes.INVALID_TOKEN.name()
+            );
         }
-        if (!jwtUtils.isTokenTypeValid(token, TokenType.CONFIRMATION)) {
-            exceptionHandlerService.handleInvalidTokenTypeException();
-        }
+    }
 
-        String email = jwtUtils.extractEmail(token);
-        AppUser userByEmail = userLookupService.findUserByEmail(email);
-
-        if (userByEmail == null) {
-            exceptionHandlerService.handleUserNotFoundException(email);
-            return;
-        }
-        AuthUser user = userByEmail.getAuthUser();
-
-        if (user.isEnabled()) {
-            exceptionHandlerService.handleUserAlreadyConfirmedException(email);
-        }
-
-        user.setEnabled(true);
-        user.setStatus(AuthUserStatus.ACTIVE);
-        authUserRepository.save(user);
-
-        if (!appUserRepository.existsByAuthUser(user)) {
-            AppUser newAppUser = new AppUser();
-            newAppUser.setAuthUser(user);
-            appUserRepository.save(newAppUser);
-        }
-
-        cancelDeletionTask(email);
-
-        log.info("User account confirmed for: {}", user.getEmail());
+    public void sendConfirmationSuccessEmail(AuthUser authUser) {
+        emailSender.sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "account.confirmed");
+        log.info("Account confirmed email sent successfully to user: {}", authUser.getEmail());
     }
 }

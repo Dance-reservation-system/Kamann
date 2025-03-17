@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.exception.services.RoleLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
@@ -27,9 +30,7 @@ import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
-import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.factory.UserFactory;
-import pl.kamann.config.exception.services.ValidationService;
 
 @Slf4j
 @Service
@@ -43,11 +44,12 @@ public class AuthService {
     private final UserFactory userFactory;
     private final AppUserMapper appUserMapper;
 
-    private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
     private final AuthUserRepository authUserRepository;
 
     private final ValidationService validationService;
+    private final UserLookupService userLookupService;
+    private final RoleLookupService roleLookupService;
 
     public LoginResponse login(@Valid LoginRequest request) {
         try {
@@ -87,7 +89,7 @@ public class AuthService {
 
     private AppUserDto registerUser(RegisterRequest request, String roleCode) {
         validationService.validateEmailNotTaken(request.email());
-        Role role = findRoleByName(roleCode);
+        Role role = roleLookupService.findRoleByName(roleCode);
 
         AppUser appUser = userFactory.createAppUser(request);
         AuthUser authUser = userFactory.createAndLinkAuthWithApp(request, role, appUser);
@@ -99,15 +101,6 @@ public class AuthService {
 
         log.info("User registered successfully: email={}, role={}", request.email(), role.getName());
         return appUserMapper.toAppUserDto(savedAppUser);
-    }
-
-    public Role findRoleByName(String roleName) {
-        return roleRepository.findByName(roleName)
-                .orElseThrow(() -> new ApiException(
-                        "Role not found: " + roleName,
-                        HttpStatus.NOT_FOUND,
-                        AuthCodes.ROLE_NOT_FOUND.name()
-                ));
     }
 
     public AppUserResponseDto getLoggedInAppUser(HttpServletRequest request) {
@@ -124,16 +117,7 @@ public class AuthService {
 
         String email = jwtUtils.extractEmail(token);
 
-        AuthUser authUser = authUserRepository.findByEmail(email)
-                .orElseThrow(() -> new ApiException("User not found",
-                        HttpStatus.NOT_FOUND,
-                        AuthCodes.USER_NOT_FOUND.name()));
-
-        AppUser appUser = appUserRepository.findByAuthUser(authUser)
-                .orElseThrow(() -> new ApiException("User profile not found",
-                        HttpStatus.NOT_FOUND,
-                        AuthCodes.USER_NOT_FOUND.name()));
-
+        AppUser appUser = userLookupService.findUserByEmail(email);
         return appUserMapper.toAppUserResponseDto(appUser);
     }
 }

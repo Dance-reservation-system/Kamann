@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.kamann.config.exception.services.UserLookupService;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.AuthUserStatus;
@@ -18,7 +19,6 @@ import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.*;
 import pl.kamann.services.admin.AdminEventService;
-import pl.kamann.config.exception.services.UserLookupService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -42,11 +42,6 @@ public class DataSeeder {
     private final AttendanceRepository attendanceRepository;
     private final AdminEventService adminEventService;
     private final UserLookupService userLookupService;
-
-    private final Long YOGA_TYPE_ID = 1L;
-    private final Long DANCE_TYPE_ID = 2L;
-    private final Long POLEDANCE_TYPE_ID = 3L;
-
 
     Role adminRole = new Role("ADMIN");
     Role instructorRole = new Role("INSTRUCTOR");
@@ -76,7 +71,7 @@ public class DataSeeder {
     }
 
     private void createDefaultAdminAndClient() {
-        createUser("admin@yoga.com", "Admin", "Admin", Set.of(adminRole));
+        createUser("studiokamann@gmail.com", "Admin", "Admin", Set.of(adminRole));
         client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole));
     }
 
@@ -122,6 +117,9 @@ public class DataSeeder {
     }
 
     private void seedEventTypes() {
+        Long YOGA_TYPE_ID = 1L;
+        Long DANCE_TYPE_ID = 2L;
+        Long POLEDANCE_TYPE_ID = 3L;
         List<EventType> eventTypes = List.of(
                 new EventType(YOGA_TYPE_ID, "Yoga", "Morning yoga"),
                 new EventType(DANCE_TYPE_ID, "Dance", "Morning dance"),
@@ -131,7 +129,7 @@ public class DataSeeder {
     }
 
     private void seedEvents() {
-        AppUser admin = userLookupService.findUserByEmail("admin@yoga.com");
+        AppUser admin = userLookupService.findUserByEmail("studiokamann@gmail.com");
         AppUser instructor = userLookupService.findUserByEmail("instructor1@yoga.com");
 
         Map<String, EventType> eventTypes = Map.of(

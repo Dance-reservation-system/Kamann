@@ -30,12 +30,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final AuthUserRepository authUserRepository;
 
+    private static final List<String> PUBLIC_URLS = List.of(
+            "/api/v1/auth/confirm",
+            "/api/v1/auth/register-client",
+            "/api/v1/auth/register-instructor",
+            "/api/v1/auth/request-password-reset",
+            "/api/v1/auth/login"
+    );
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
         log.debug("JWT Filter Intercepted Request: {}", requestURI);
+
+        if(isPublicUrl(request.getRequestURI())) {
+            log.debug("Skipping JWT authentication for: {}", requestURI);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         Optional<String> tokenOpt = jwtUtils.extractTokenFromRequest(request);
 
@@ -78,4 +92,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    private boolean isPublicUrl(String requestURI) {
+        return PUBLIC_URLS.stream().anyMatch(requestURI::startsWith);
+    }
 }

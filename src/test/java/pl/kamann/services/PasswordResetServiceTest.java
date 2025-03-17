@@ -103,10 +103,9 @@ public class PasswordResetServiceTest {
 
         appUser.setAuthUser(authUser);
 
-        appUser = appUserRepository.save(appUser);
+        appUserRepository.save(appUser);
 
-        when(jwtUtils.validateToken(request.getToken())).thenReturn(true);
-        when(jwtUtils.isTokenTypeValid(request.getToken(), TokenType.RESET_PASSWORD)).thenReturn(true);
+        when(jwtUtils.validateToken(request.getToken(), TokenType.RESET_PASSWORD)).thenReturn(true);
         when(jwtUtils.extractEmail(request.getToken())).thenReturn(email);
 
         passwordResetService.resetPasswordWithToken(request);
@@ -155,8 +154,6 @@ public class PasswordResetServiceTest {
 
         assertTrue(exception.getMessage().contains("Invalid reset password token."));
     }
-
-
 
     @Test
     void shouldThrowExceptionForUserNotFound() {
@@ -221,7 +218,7 @@ public class PasswordResetServiceTest {
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .claim("TokenType", TokenType.CONFIRMATION.toString())
+                .claim("TokenType", TokenType.RESET_PASSWORD.toString())
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }

@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.exception.services.RoleLookupService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.login.LoginRequest;
@@ -72,6 +73,9 @@ class AuthServiceTest {
 
     @Mock
     private AppUserMapper appUserMapper;
+
+    @Mock
+    private RoleLookupService roleLookupService;
 
     @InjectMocks
     private AuthService authService;
@@ -187,7 +191,6 @@ class AuthServiceTest {
 
         when(userFactory.createAppUser(request)).thenReturn(savedUser);
         when(userFactory.createAndLinkAuthWithApp(request, clientRole, savedUser)).thenReturn(savedAuthUser);
-        when(roleRepository.findByName("CLIENT")).thenReturn(Optional.of(clientRole));
         doNothing().when(validationService).validateEmailNotTaken(request.email());
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> {
             AppUser user = invocation.getArgument(0);
@@ -195,6 +198,7 @@ class AuthServiceTest {
             user.getAuthUser().setId(2L);
             return user;
         });
+        when(roleLookupService.findRoleByName(any(String.class))).thenReturn(clientRole);
         when(appUserMapper.toAppUserDto(any(AppUser.class))).thenReturn(expectedDto);
 
         AppUserDto registeredUser = authService.registerClient(request);
@@ -208,7 +212,6 @@ class AuthServiceTest {
         assertEquals(expectedDto.status(), registeredUser.status());
 
         verify(validationService).validateEmailNotTaken(request.email());
-        verify(roleRepository).findByName("CLIENT");
         verify(appUserRepository).save(any(AppUser.class));
         verify(appUserMapper).toAppUserDto(any(AppUser.class));
     }
@@ -234,7 +237,8 @@ class AuthServiceTest {
         RegisterRequest request = new RegisterRequest("new@example.com", "password", "John", "Doe", "123-456-7890");
 
         doNothing().when(validationService).validateEmailNotTaken(request.email());
-        when(roleRepository.findByName(RoleCodes.CLIENT.name())).thenReturn(Optional.empty());
+        when(roleLookupService.findRoleByName(RoleCodes.CLIENT.name()))
+                .thenThrow(new ApiException("Role not found: " + RoleCodes.CLIENT.name(), HttpStatus.NOT_FOUND, AuthCodes.ROLE_NOT_FOUND.getCode()));
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.registerClient(request));
 
@@ -242,7 +246,7 @@ class AuthServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
         verify(validationService).validateEmailNotTaken(request.email());
-        verify(roleRepository).findByName(RoleCodes.CLIENT.name());
+        verify(roleLookupService).findRoleByName(RoleCodes.CLIENT.name());
         verifyNoInteractions(passwordEncoder, appUserRepository, confirmUserService);
     }
 
@@ -251,7 +255,8 @@ class AuthServiceTest {
         RegisterRequest request = new RegisterRequest("new@example.com", "password", "John", "Doe", "123-456-7890");
 
         doNothing().when(validationService).validateEmailNotTaken(request.email());
-        when(roleRepository.findByName(RoleCodes.INSTRUCTOR.name())).thenReturn(Optional.empty());
+        when(roleLookupService.findRoleByName(RoleCodes.INSTRUCTOR.name()))
+                .thenThrow(new ApiException("Role not found: " + RoleCodes.INSTRUCTOR.name(), HttpStatus.NOT_FOUND, AuthCodes.ROLE_NOT_FOUND.getCode()));
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.registerInstructor(request));
 
@@ -259,7 +264,7 @@ class AuthServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
         verify(validationService).validateEmailNotTaken(request.email());
-        verify(roleRepository).findByName(RoleCodes.INSTRUCTOR.name());
+        verify(roleLookupService).findRoleByName(RoleCodes.INSTRUCTOR.name());
         verifyNoInteractions(passwordEncoder, appUserRepository);
     }
 }
