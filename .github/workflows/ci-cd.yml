@@ -20,8 +20,19 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Cache Maven Dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
+
+      - name: Verify Docker is Running
+        run: docker info
 
       - name: Build Application
         run: mvn clean package -DskipTests
@@ -29,7 +40,7 @@ jobs:
       - name: Run Tests with Testcontainers
         env:
           SPRING_PROFILES_ACTIVE: test
-        run: mvn test
+        run: mvn test -X
 
       - name: Print Test Logs (if failure)
         if: failure()
