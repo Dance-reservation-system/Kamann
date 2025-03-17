@@ -26,16 +26,16 @@ public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent
     void deleteByEvent(Event event);
 
     @Query("""
-        SELECT o FROM OccurrenceEvent o
-        LEFT JOIN FETCH o.participants p
-        WHERE (:scope = 'UPCOMING' AND o.start >= CURRENT_TIMESTAMP AND :user MEMBER OF o.participants)
-           OR (:scope = 'AVAILABLE' AND o.start >= CURRENT_TIMESTAMP AND :user NOT MEMBER OF o.participants)
-           OR (:scope = 'PAST' AND o.start < CURRENT_TIMESTAMP)
+            SELECT o FROM OccurrenceEvent o
+            LEFT JOIN FETCH o.participants p
+            LEFT JOIN FETCH o.attendances a
+            WHERE (:scope = 'UPCOMING' AND o.start >= CURRENT_TIMESTAMP AND :user MEMBER OF o.participants)
+               OR (:scope = 'AVAILABLE' AND o.start >= CURRENT_TIMESTAMP AND :user NOT MEMBER OF o.participants)
+               OR (:scope = 'PAST' AND o.start < CURRENT_TIMESTAMP)
         """)
     Page<OccurrenceEvent> findFilteredOccurrences(
             @Param("scope") String scope,
             @Param("user") AppUser user,
             Pageable pageable
     );
-
 }

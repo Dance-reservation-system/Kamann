@@ -31,7 +31,7 @@ public class OccurrenceEvent implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
@@ -57,7 +57,7 @@ public class OccurrenceEvent implements Serializable {
     @Enumerated(EnumType.STRING)
     private OccurrenceEventScope scope;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "instructor_id")
     private AppUser instructor;
 
