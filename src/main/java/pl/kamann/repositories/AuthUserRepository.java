@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.Role;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface AuthUserRepository extends JpaRepository<AuthUser, Long> {
@@ -15,7 +16,7 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, Long> {
     Optional<AuthUser> findByEmail(String email);
 
     @Query("SELECT u FROM AuthUser u JOIN u.roles r WHERE r.name = 'ADMIN'")
-    AuthUser findAdminUser();
+    List<AuthUser> findAdminUser();
 
     @Query("SELECT u FROM AuthUser u JOIN u.roles r WHERE r = :role")
     Page<AuthUser> findUsersByRoleWithRoles(Pageable pageable, @Param("role") Role role);

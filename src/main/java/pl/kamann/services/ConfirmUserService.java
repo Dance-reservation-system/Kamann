@@ -1,6 +1,5 @@
 package pl.kamann.services;
 
-import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +18,7 @@ import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -42,23 +42,21 @@ public class ConfirmUserService {
 
     private void sendConfirmationEmail(AuthUser authUser, String token) {
         String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
+        validationService.validateAuthUser(authUser);
 
-        try {
-            if(authUser.getRoles().stream().anyMatch(role -> role.getName().equals("INSTRUCTOR"))) {
-                AuthUser admin = authUserRepository.findAdminUser();
-                validationService.validateAuthUser(admin);
-
-                emailSender.sendEmail(admin.getEmail(), confirmationLink, Locale.ENGLISH, "admin.approval");
-                emailSender.sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "instructor.registration");
-
-                log.info("Confirmation email sent successfully to admin: {}", authUser.getEmail());
-            } else {
-                emailSender.sendEmail(authUser.getEmail(), confirmationLink, Locale.ENGLISH, "client.registration");
-                log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
+        if(authUser.getRoles().stream().anyMatch(role -> role.getName().equals("INSTRUCTOR"))) {
+            List<AuthUser> adminUsers = authUserRepository.findAdminUser();
+            for (AuthUser adminUser: adminUsers){
+                validationService.validateAuthUser(adminUser);
+                emailSender.sendEmail(adminUser.getEmail(), confirmationLink, Locale.ENGLISH, "admin.approval");
             }
-        } catch (MessagingException e) {
-            log.error("Error sending the confirmation email to user: {}", authUser.getEmail(), e);
-            exceptionHandlerService.handleEmailSendingError();
+
+            emailSender.sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "instructor.registration");
+
+            log.info("Confirmation email sent successfully to admin: {}", authUser.getEmail());
+        } else {
+            emailSender.sendEmail(authUser.getEmail(), confirmationLink, Locale.ENGLISH, "client.registration");
+            log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
         }
     }
 
@@ -127,19 +125,14 @@ public class ConfirmUserService {
         } else {
             throw new ApiException(
                     "Invalid confirmation token.",
-                    HttpStatus.NOT_FOUND,
+                    HttpStatus.BAD_REQUEST,
                     AuthCodes.INVALID_TOKEN.name()
             );
         }
     }
 
     public void sendConfirmationSuccessEmail(AuthUser authUser) {
-        try{
-            emailSender.sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "account.confirmed");
-            log.info("Account confirmed email sent successfully to user: {}", authUser.getEmail());
-        } catch (MessagingException e) {
-            log.error("Error sending the account confirmed email to {}: {}", authUser.getEmail(), e.getMessage(), e);
-            exceptionHandlerService.handleEmailSendingError();
-        }
+        emailSender.sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "account.confirmed");
+        log.info("Account confirmed email sent successfully to user: {}", authUser.getEmail());
     }
 }

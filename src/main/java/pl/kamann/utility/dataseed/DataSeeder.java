@@ -71,7 +71,7 @@ public class DataSeeder {
     }
 
     private void createDefaultAdminAndClient() {
-        createUser("admin@yoga.com", "Admin", "Admin", Set.of(adminRole));
+        createUser("studiokamann@gmail.com", "Admin", "Admin", Set.of(adminRole));
         client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole));
     }
 
@@ -129,7 +129,7 @@ public class DataSeeder {
     }
 
     private void seedEvents() {
-        AppUser admin = userLookupService.findUserByEmail("admin@yoga.com");
+        AppUser admin = userLookupService.findUserByEmail("studiokamann@gmail.com");
         AppUser instructor = userLookupService.findUserByEmail("instructor1@yoga.com");
 
         Map<String, EventType> eventTypes = Map.of(

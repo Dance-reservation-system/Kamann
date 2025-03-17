@@ -1,6 +1,5 @@
 package pl.kamann.services;
 
-import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +25,7 @@ import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
 import pl.kamann.testcontainers.config.TestContainersConfig;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -99,7 +99,7 @@ public class ConfirmUserServiceTest {
         );
 
         assertEquals("Invalid confirmation token.", apiException.getMessage());
-        assertEquals(HttpStatus.NOT_FOUND, apiException.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, apiException.getStatus());
         assertEquals(AuthCodes.INVALID_TOKEN.name(), apiException.getCode());
     }
 
@@ -122,7 +122,7 @@ public class ConfirmUserServiceTest {
     }
 
     @Test
-    public void shouldNotSendConfirmationEmailIfUserAlreadyConfirmed() throws MessagingException {
+    public void shouldNotSendConfirmationEmailIfUserAlreadyConfirmed() {
         String email = "user@example.com";
 
         AuthUser authUser = new AuthUser();
@@ -194,7 +194,7 @@ public class ConfirmUserServiceTest {
     }
 
     @Test
-    public void shouldSendConfirmationEmailToAdminIfUserIsInstructor() throws MessagingException {
+    public void shouldSendConfirmationEmailToAdminIfUserIsInstructor() {
         String email = "instructor@example.com";
 
         AuthUser authUser = new AuthUser();
@@ -208,7 +208,7 @@ public class ConfirmUserServiceTest {
         AuthUser adminUser = new AuthUser();
         adminUser.setEmail("admin@example.com");
 
-        Mockito.when(authUserRepository.findAdminUser()).thenReturn(adminUser);
+        Mockito.when(authUserRepository.findAdminUser()).thenReturn(List.of(adminUser));
 
         confirmUserService.sendConfirmationEmail(authUser);
         Mockito.verify(emailSender).sendEmail(adminUser.getEmail(), null, Locale.ENGLISH, "admin.approval");
@@ -216,7 +216,7 @@ public class ConfirmUserServiceTest {
     }
 
     @Test
-    public void shouldSendConfirmationEmailToUserIfNotInstructor() throws MessagingException {
+    public void shouldSendConfirmationEmailToUserIfNotInstructor() {
         String email = "user@example.com";
 
         AuthUser authUser = new AuthUser();
@@ -233,7 +233,7 @@ public class ConfirmUserServiceTest {
     }
 
     @Test
-    public void shouldSendConfirmationSuccessEmailWhenAccountIsConfirmed() throws MessagingException {
+    public void shouldSendConfirmationSuccessEmailWhenAccountIsConfirmed(){
         String email = "user@example.com";
 
         AuthUser authUser = new AuthUser();

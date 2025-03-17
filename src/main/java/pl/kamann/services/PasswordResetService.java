@@ -1,6 +1,5 @@
 package pl.kamann.services;
 
-import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -64,19 +63,10 @@ public class PasswordResetService {
 
     private void sendResetPasswordEmail(AuthUser authUser) {
         String token = tokenService.generateToken(authUser.getEmail(), TokenType.RESET_PASSWORD, 15 * 60 * 1000);
+        String resetLink = tokenService.generateResetPasswordLink(token, tokenService.getResetPasswordLink());
 
-        try {
-            String resetLink = tokenService.generateResetPasswordLink(token, tokenService.getResetPasswordLink());
-            log.info("Sending reset password email to: {}", authUser.getEmail());
-            emailSender.sendEmail(authUser.getEmail(), resetLink, Locale.ENGLISH, "reset.password");
-        } catch (MessagingException e) {
-            log.error("Error sending reset password email to {}: {}", authUser.getEmail(), e.getMessage(), e);
-            throw new ApiException(
-                    "Error sending the reset password email.",
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    AuthCodes.RESET_PASSWORD_EMAIL_ERROR.name()
-            );
-        }
+        log.info("Sending reset password email to: {}", authUser.getEmail());
+        emailSender.sendEmail(authUser.getEmail(), resetLink, Locale.ENGLISH, "reset.password");
     }
 
     @Transactional
