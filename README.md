@@ -8,6 +8,7 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
 ![Maven](https://img.shields.io/badge/Maven-C71A36?logo=apachemaven)
 ![JWT](https://img.shields.io/badge/JWT-000000?logo=jsonwebtokens&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?logo=swagger&logoColor=black)
+[![Build and Test Application](https://github.com/Dance-reservation-system/Kamann/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Dance-reservation-system/Kamann/actions/workflows/ci-cd.yml)
 
 ## 🌟 Features
 
