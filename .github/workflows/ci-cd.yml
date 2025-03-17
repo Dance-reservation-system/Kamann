@@ -48,6 +48,7 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:tc:postgresql:16:///testdb
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
+          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.testcontainers.jdbc.ContainerDatabaseDriver
         run: mvn test
 
       - name: Print Test Logs (if failure)
