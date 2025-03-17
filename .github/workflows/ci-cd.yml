@@ -28,6 +28,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+      - name: Verify Docker
+        run: |
+          docker --version
+          docker ps
+
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
