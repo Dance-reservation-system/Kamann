@@ -49,7 +49,7 @@ jobs:
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
           SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.testcontainers.jdbc.ContainerDatabaseDriver
-          JWT_SECRET: test-secret-key-for-github-actions
+          JWT_SECRET: tSGVsbG8gV29ybGQ=
           JWT_EXPIRATION_TIME: 86400000
           MAIL_USERNAME: test@example.com
           MAIL_PASSWORD: test-password
