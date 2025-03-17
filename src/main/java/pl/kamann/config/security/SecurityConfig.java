@@ -68,7 +68,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSourceProd()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_URLS).permitAll()
@@ -94,7 +94,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChainLocal(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSourceDev()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .anyRequest().authenticated()
@@ -113,29 +113,14 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    @Profile("dev")
+    public CorsConfigurationSource corsConfigurationSourceDev() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        String activeProfile = System.getProperty("spring.profiles.active");
-        if (activeProfile == null) {
-            activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
-        }
-
-        if ("dev".equals(activeProfile)) {
-            configuration.setAllowedOrigins(List.of(
-                    "http://localhost:8080",
-                    "http://localhost:5173"
-            ));
-        } else if ("prod".equals(activeProfile)) {
-            configuration.setAllowedOrigins(List.of(
-                "https://kamann-production.up.railway.app"
-
-            ));
-        } else {
-            configuration.setAllowedOrigins(List.of(
-            ));
-        }
-
+        // CORS settings for dev profile
+        configuration.setAllowedOrigins(List.of(
+                "*"
+        ));
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
         configuration.setAllowCredentials(true);
@@ -146,7 +131,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OpenAPI customOpenAPI() {
+    @Profile("prod")
+    public CorsConfigurationSource corsConfigurationSourceProd() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(
+                "https://kamann-production.up.railway.app"
+        ));
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
+    @Profile("dev")
+    public OpenAPI customOpenAPIDev() {
         return new OpenAPI()
                 .components(new Components()
                         .addSecuritySchemes("bearer-jwt",
@@ -158,12 +161,33 @@ public class SecurityConfig {
                         ))
                 .info(new Info()
                         .title("Dance dance")
-                        .version("1.0")
+                        .version("1.0.0")
                         .description("API Documentation"))
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
                 .servers(List.of(
-                    new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app").description("Production Server")
+                        new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080").description("API Server (Dev)")
+                ));
+    }
 
+    @Bean
+    @Profile("prod")
+    public OpenAPI customOpenAPIProd() {
+        return new OpenAPI()
+                .components(new Components()
+                        .addSecuritySchemes("bearer-jwt",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .description("Enter JWT token")
+                        ))
+                .info(new Info()
+                        .title("Dance dance")
+                        .version("1.0.0")
+                        .description("API Documentation"))
+                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
+                .servers(List.of(
+                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app").description("API Server (Prod)")
                 ));
     }
 

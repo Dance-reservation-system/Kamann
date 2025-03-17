@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,6 +16,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import pl.kamann.config.codes.AuthCodes;
+import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AuthUserRepository;
@@ -32,18 +35,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final AuthUserRepository authUserRepository;
-    private final String COOKIE_NAME = "refresh_token";
+
 
     private static final String API_BASE_PATH = "/api";
     private static final String API_VERSION = "/v1";
-    private static final String AUTH_PATH = "/auth";
     private static final Set<String> EXCLUDED_URIS = Set.of(
-            "/confirm",
-            "/register-client",
-            "/register-instructor",
-            "/reset-password",
-            "/request-password-reset",
-            "/login"
+            "/auth/confirm",
+            "/auth/register-client",
+            "/auth/register-instructor",
+            "/auth/reset-password",
+            "/auth/request-password-reset",
+            "/auth/login"
     );
 
     @Override
@@ -99,17 +101,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             log.info("Authenticated user: {}", email);
 
-            // Create refresh token (this is a new step)
-            String refreshToken = jwtUtils.generateTokenWithFlag(email, TokenType.REFRESH, 604800000L); // 7 days expiration
+                if (!jwtUtils.isValidRefreshToken(token)) {
+                    log.warn("Refresh token is invalid or expired.");
+                    throw new ApiException("Refresh token is invalid or expired.",
+                            HttpStatus.UNAUTHORIZED,
+                            AuthCodes.EXPIRED_TOKEN.name()
+                    );
+                }
 
-            // Create cookie and add httpOnly flag
-            Cookie refreshTokenCookie = new Cookie(COOKIE_NAME, refreshToken);
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setPath("/");
-
-            refreshTokenCookie.setSecure(request.isSecure());
-
-            response.addCookie(refreshTokenCookie);
+            String refreshToken = jwtUtils.generateTokenWithFlag(email, TokenType.REFRESH, 604800000L); // 7 dni
+            boolean isSecure = request.isSecure();
+            addRefreshTokenCookie(response, refreshToken, isSecure);
 
         } catch (UsernameNotFoundException ex) {
             log.error("Authentication failed: {}", ex.getMessage());
@@ -128,6 +130,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String constructFullApiUrl(String path) {
-        return API_BASE_PATH + API_VERSION + AUTH_PATH + path;
+        return API_BASE_PATH + API_VERSION + path;
     }
+
+    private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken, boolean isSecure) {
+        Cookie refreshTokenCookie = new Cookie("refresh_token", refreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setSecure(isSecure);
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days expiration date
+        refreshTokenCookie.setAttribute("SameSite", "None");
+        response.addCookie(refreshTokenCookie);
+    }
+
 }

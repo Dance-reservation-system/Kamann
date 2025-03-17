@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class JwtUtils {
     @Getter
     private final SecretKey secretKey;
     private final long jwtExpiration;
+    private final String COOKIE_NAME = "refresh_token";
 
     public JwtUtils(
             @Value("${jwt.secret}") String secret,
@@ -115,25 +117,48 @@ public class JwtUtils {
         return expiration.before(new Date());
     }
 
-    public Optional<String> extractTokenFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        return (bearerToken != null && bearerToken.startsWith("Bearer "))
-                ? Optional.of(bearerToken.substring(7))
-                : Optional.empty();
-    }
-
-    public String refreshToken(String token) {
-        if (validateToken(token)) {
-            String email = extractEmail(token);
-            Set<Role> roles = extractClaim(token, claims -> new HashSet<>((List<Role>) claims.get("roles")));
-            return generateToken(email, roles);
-        } else {
-            throw new JwtException("Invalid or expired token");
-        }
-    }
-
     public boolean isTokenFromUser(String token, String userEmail) {
         String email = extractEmail(token);
         return email.equals(userEmail);
+    }
+
+    public boolean isValidRefreshToken(String token) {
+        try {
+            if (token == null || token.isEmpty()) {
+                return false;
+            }
+
+            Claims claims = extractAllClaims(token);
+            Date expirationDate = claims.getExpiration();
+            return expirationDate != null && expirationDate.after(new Date());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String extractTokenFromHeader(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
+    }
+
+    public Optional<String> extractTokenFromRequest(HttpServletRequest request) {
+        String token = extractTokenFromHeader(request);
+        if (token != null) {
+            return Optional.of(token);
+        }
+
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (COOKIE_NAME.equals(cookie.getName())) {
+                    return Optional.of(cookie.getValue());
+                }
+            }
+        }
+
+        return Optional.empty();
     }
 }
