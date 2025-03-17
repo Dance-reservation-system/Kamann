@@ -40,7 +40,10 @@ jobs:
       - name: Run Tests with Testcontainers
         env:
           SPRING_PROFILES_ACTIVE: test
-        run: mvn test -X
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+        run: mvn test
 
       - name: Print Test Logs (if failure)
         if: failure()
