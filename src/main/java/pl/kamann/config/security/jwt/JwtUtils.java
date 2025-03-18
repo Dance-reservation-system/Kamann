@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import pl.kamann.entities.appuser.Role;
 import pl.kamann.entities.appuser.TokenType;
 
 import javax.crypto.SecretKey;
@@ -26,31 +25,20 @@ public class JwtUtils {
 
     public JwtUtils(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration:36000000}") long jwtExpiration // default 10 hours
+            @Value("${jwt.expiration:900000}") long jwtExpiration // default 15 minutes
     ) {
         byte[] decodedKey = Base64.getDecoder().decode(secret);
         this.secretKey = Keys.hmacShaKeyFor(decodedKey);
         this.jwtExpiration = jwtExpiration;
     }
 
-    public String generateToken(String email, Set<Role> roles) {
-        Map<String, Object> claims = createClaims("roles", roles.stream().map(Role::getName).toList());
-        return generateTokenWithClaims(email, claims, jwtExpiration);
-    }
-
-    public String generateTokenWithFlag(String email, TokenType flag, long expirationTime) {
-        Map<String, Object> claims = createClaims("TokenType", flag.toString());
-
-        return generateTokenWithClaims(email, claims, expirationTime);
-    }
-
-    private Map<String, Object> createClaims(String key, Object value) {
+    public Map<String, Object> createClaims(String key, Object value) {
         return Collections.singletonMap(key, value);
     }
 
-    public String generateTokenWithClaims(String email, Map<String, Object> claims, long expiration) {
+    public String generateToken(String email, Map<String, Object> claims) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
         String token = Jwts.builder()
                 .setHeaderParam("typ", "JWT")

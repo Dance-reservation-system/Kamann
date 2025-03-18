@@ -62,7 +62,7 @@ public class PasswordResetService {
     }
 
     private void sendResetPasswordEmail(AuthUser authUser) {
-        String token = tokenService.generateToken(authUser.getEmail(), TokenType.RESET_PASSWORD, 15 * 60 * 1000);
+        String token = tokenService.generateToken(authUser.getEmail(), TokenType.RESET_PASSWORD);
         String resetLink = tokenService.generateResetPasswordLink(token, tokenService.getResetPasswordLink());
 
         log.info("Sending reset password email to: {}", authUser.getEmail());

@@ -61,7 +61,7 @@ public class ConfirmUserService {
     }
 
     private void handleEmailSending(AuthUser authUser) {
-        String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION, 15 * 60 * 1000);
+        String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION);
         sendConfirmationEmail(authUser, token);
         scheduleUserDeletion(authUser.getEmail());
     }

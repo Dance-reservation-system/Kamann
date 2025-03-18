@@ -34,7 +34,7 @@ import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.factory.UserFactory;
 import pl.kamann.config.exception.services.ValidationService;
 
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -99,8 +99,9 @@ class AuthServiceTest {
                 .build();
 
         Authentication mockAuthentication = new UsernamePasswordAuthenticationToken(user, "encodedPassword", user.getAuthorities());
+        Map<String, Object> claims = jwtUtils.createClaims("roles", user.getRoles());
         when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
-        when(jwtUtils.generateToken(loginRequest.email(), user.getRoles())).thenReturn("token");
+        when(jwtUtils.generateToken(loginRequest.email(), claims)).thenReturn("token");
 
         LoginResponse response = authService.login(loginRequest);
 
@@ -108,7 +109,7 @@ class AuthServiceTest {
         assertEquals("token", response.token());
 
         verify(authenticationManager).authenticate(any(Authentication.class));
-        verify(jwtUtils).generateToken(loginRequest.email(), user.getRoles());
+        verify(jwtUtils).generateToken(loginRequest.email(), claims);
     }
 
     @Test

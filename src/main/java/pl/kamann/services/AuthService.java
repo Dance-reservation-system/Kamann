@@ -59,7 +59,7 @@ public class AuthService {
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
             log.info("User logged in successfully: email={}", authUser.getEmail());
-            return new LoginResponse(jwtUtils.generateToken(authUser.getEmail(), authUser.getRoles()));
+            return new LoginResponse(jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles())));
         } catch (DisabledException e) {
             log.warn("Attempted login with unconfirmed email: {}", request.email());
             throw new ApiException(
