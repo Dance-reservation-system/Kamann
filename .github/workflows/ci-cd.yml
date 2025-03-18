@@ -1,50 +1,38 @@
-name: Build and Test Application
+name: Build and Test with Testcontainers
 
 on:
   pull_request:
-    branches:
-      - master
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up JDK
+      - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Cache Maven Dependencies
+      - name: Cache Maven packages
         uses: actions/cache@v3
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
-      - name: Verify Docker Setup
-        run: docker run --rm hello-world
-
-      - name: Build Application
-        run: mvn clean package -DskipTests
-
-      - name: Run Tests with Testcontainers
+      - name: Build and test with Maven
         env:
-          TESTCONTAINERS_RYUK_DISABLED: true
           SPRING_PROFILES_ACTIVE: test
           JWT_SECRET: tSGVsbG8gV29ybGQ=
           JWT_EXPIRATION_TIME: 86400000
-          MAIL_USERNAME: test@example.com
-          MAIL_PASSWORD: test-password
-          SERVER_PORT: 8080
-        run: mvn test
+        run: mvn -B test
 
-      - name: Print Test Logs (if failure)
+      - name: Print test logs on failure
         if: failure()
-        run: cat target/surefire-reports/*.txt
+        run: find target/surefire-reports -name "*.txt" -exec cat {} \;
