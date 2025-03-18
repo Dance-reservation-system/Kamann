@@ -28,33 +28,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Verify Docker
-        run: |
-          docker --version
-          docker ps
-
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
-
-      - name: Verify Docker is Running
-        run: docker info
+      - name: Verify Docker Setup
+        run: docker run --rm hello-world
 
       - name: Build Application
         run: mvn clean package -DskipTests
 
       - name: Run Tests with Testcontainers
         env:
+          TESTCONTAINERS_RYUK_DISABLED: true
           SPRING_PROFILES_ACTIVE: test
-          SPRING_DATASOURCE_URL: jdbc:tc:postgresql:16:///testdb
-          SPRING_DATASOURCE_USERNAME: postgres
-          SPRING_DATASOURCE_PASSWORD: postgres
-          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.testcontainers.jdbc.ContainerDatabaseDriver
           JWT_SECRET: tSGVsbG8gV29ybGQ=
           JWT_EXPIRATION_TIME: 86400000
           MAIL_USERNAME: test@example.com
           MAIL_PASSWORD: test-password
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
           SERVER_PORT: 8080
         run: mvn test
 

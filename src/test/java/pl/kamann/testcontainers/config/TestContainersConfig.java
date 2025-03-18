@@ -19,9 +19,12 @@ public class TestContainersConfig {
 
         // Start container
         POSTGRES_CONTAINER.start();
+        if (POSTGRES_CONTAINER.isRunning()) {
+            System.out.println("XXX PostgreSQL container started successfully.");
+        } else {
+            System.out.println("XXX Failed to start PostgreSQL container.");
+        }
 
-        // Log the JDBC URL for debugging
-        System.out.println("PostgreSQL container started with URL: " + POSTGRES_CONTAINER.getJdbcUrl());
     }
 
     @DynamicPropertySource
