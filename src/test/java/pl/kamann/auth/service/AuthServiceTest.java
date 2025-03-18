@@ -99,7 +99,7 @@ class AuthServiceTest {
                 .build();
 
         Authentication mockAuthentication = new UsernamePasswordAuthenticationToken(user, "encodedPassword", user.getAuthorities());
-        Map<String, Object> claims = jwtUtils.createClaims("roles", user.getRoles());
+        Map<String, Object> claims = jwtUtils.createClaims("roles", user.getRoles().stream().map(Role::getName).toList());
         when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
         when(jwtUtils.generateToken(loginRequest.email(), claims)).thenReturn("token");
 
