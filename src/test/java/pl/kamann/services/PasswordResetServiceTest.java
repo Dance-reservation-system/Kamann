@@ -190,6 +190,9 @@ public class PasswordResetServiceTest {
     }
 
     private String generateValidJwtToken(String email) {
+        SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        when(jwtUtils.getSecretKey()).thenReturn(secretKey);
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + 3600000);
 
@@ -198,7 +201,7 @@ public class PasswordResetServiceTest {
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .claim("TokenType", TokenType.CONFIRMATION.toString())
-                .signWith(jwtUtils.getSecretKey(), SignatureAlgorithm.HS256)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
