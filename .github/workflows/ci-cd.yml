@@ -9,24 +9,27 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21'
-          cache: maven
 
-      - name: Set environment variables
-        env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_EXPIRATION_TIME: ${{ secrets.JWT_EXPIRATION_TIME }}
-        run: |
-          echo "SPRING_PROFILES_ACTIVE=test" >> $GITHUB_ENV
-          echo "SPRING_TEST_CONTEXT_FAILURE_THRESHOLD=5" >> $GITHUB_ENV
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
       - name: Build and test with Maven
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_TIME: ${{ secrets.JWT_EXPIRATION_TIME }}
+          SPRING_TEST_CONTEXT_FAILURE_THRESHOLD: 5
         run: mvn -B test
 
       - name: Print test logs on failure
