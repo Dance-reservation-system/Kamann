@@ -1,8 +1,6 @@
-name: Build and Test with Testcontainers
+name: Build and Test with H2 Database
 
 on:
-#  pull_request:
-#    branches: [ master, test-actions]
   workflow_dispatch:
 
 jobs:
@@ -19,8 +17,12 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-#      - name: Pull PostgreSQL image for Testcontainers
-#        run: docker pull postgres:16
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
       - name: Build and test with Maven
         env:
@@ -28,8 +30,6 @@ jobs:
           JWT_SECRET: tSGVsbG8gV29ybGQ=
           JWT_EXPIRATION_TIME: 86400000
           SPRING_TEST_CONTEXT_FAILURE_THRESHOLD: 5
-          TESTCONTAINERS_RYUK_DISABLED: true
-          TESTCONTAINERS_CHECKS_DISABLE: true
         run: mvn -B test
 
       - name: Print test logs on failure
