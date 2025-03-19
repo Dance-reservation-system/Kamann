@@ -2,7 +2,7 @@ name: Build and Test with Testcontainers
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ master, test-actions]
   workflow_dispatch:
 
 jobs:
