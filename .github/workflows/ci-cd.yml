@@ -19,6 +19,15 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Enable Docker container reuse
+        run: echo "testcontainers.reuse.enable=true" > ~/.testcontainers.properties
+
+      - name: Set up Testcontainers environment
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_CHECKS_DISABLE: true
+          DOCKER_HOST: unix:///var/run/docker.sock
+
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -31,7 +40,8 @@ jobs:
           SPRING_PROFILES_ACTIVE: test
           JWT_SECRET: tSGVsbG8gV29ybGQ=
           JWT_EXPIRATION_TIME: 86400000
-        run: mvn -B test
+          SPRING_TEST_CONTEXT_FAILURE_THRESHOLD: 5
+        run: mvn -B test -X
 
       - name: Print test logs on failure
         if: failure()

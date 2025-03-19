@@ -15,7 +15,8 @@ public class TestContainersConfig {
         POSTGRES_CONTAINER = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16"))
                 .withDatabaseName("testdb")
                 .withUsername("test")
-                .withPassword("test");
+                .withPassword("test")
+                .withReuse(true);
 
         // Start container
         POSTGRES_CONTAINER.start();
