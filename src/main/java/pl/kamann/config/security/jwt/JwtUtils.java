@@ -8,7 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.entities.appuser.TokenType;
@@ -24,14 +24,26 @@ public class JwtUtils {
     private final SecretKey secretKey;
     private final long jwtExpiration;
 
-    public JwtUtils(
-            @Value("${jwt.secret:dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9yanNvbndlYnRva2Vuc2lnbmluZ2V4YW1wbGU=}") String secret,
-            @Value("${jwt.expiration:36000000}") long jwtExpiration // default 10 hours
-    ) {
+    public JwtUtils(Environment environment) {
+        String secret = environment.getProperty("jwt.secret");
+        Long expiration = environment.getProperty("jwt.expiration", Long.class);
+
+        if (secret == null || secret.isEmpty()) {
+            log.warn("JWT secret not configured. Using default secret (NOT RECOMMENDED FOR PRODUCTION)");
+            secret = "dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9yanNvbndlYnRva2Vuc2lnbmluZ2V4YW1wbGU=";
+        }
+
+        if (expiration == null) {
+            log.info("JWT expiration not configured. Using default expiration (10 hours)");
+            expiration = 36000000L;
+        }
+
         byte[] decodedKey = Base64.getDecoder().decode(secret);
         this.secretKey = Keys.hmacShaKeyFor(decodedKey);
-        this.jwtExpiration = jwtExpiration;
+
+        this.jwtExpiration = expiration;
     }
+
 
     public String generateToken(String email, Set<Role> roles) {
         Map<String, Object> claims = createClaims("roles", roles.stream().map(Role::getName).toList());
