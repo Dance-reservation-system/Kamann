@@ -1,14 +1,13 @@
 package pl.kamann.services;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
@@ -31,10 +30,10 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = {TestContainersConfig.class})
+@SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(TestContainersConfig.class)
 public class ConfirmUserServiceTest {
 
     @Mock

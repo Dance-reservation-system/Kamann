@@ -3,8 +3,8 @@ package pl.kamann.services.admin;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.dtos.FacilityDto;
 import pl.kamann.repositories.FacilityRepository;
@@ -16,9 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
-@ContextConfiguration(classes = TestContainersConfig.class)
 @ActiveProfiles("test")
 @Transactional
+@Import(TestContainersConfig.class)
 class FacilityIntegrationTest {
 
     @Autowired
