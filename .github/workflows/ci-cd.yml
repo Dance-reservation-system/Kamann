@@ -1,13 +1,11 @@
-name: Build and Test with Testcontainers
+name: Build and Test with H2 Database
 
 on:
-#  pull_request:
-#    branches: [ master, test-actions]
   workflow_dispatch:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -19,9 +17,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Enable Docker container reuse
-        run: echo "testcontainers.reuse.enable=true" > ~/.testcontainers.properties
-
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -32,13 +27,10 @@ jobs:
       - name: Build and test with Maven
         env:
           SPRING_PROFILES_ACTIVE: test
-          JWT_SECRET: tSGVsbG8gV29ybGQ=
-          JWT_EXPIRATION_TIME: 86400000
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_TIME: ${{ secrets.JWT_EXPIRATION_TIME }}
           SPRING_TEST_CONTEXT_FAILURE_THRESHOLD: 5
-          TESTCONTAINERS_RYUK_DISABLED: true
-          TESTCONTAINERS_CHECKS_DISABLE: true
-          DOCKER_HOST: unix:///var/run/docker.sock
-        run: mvn -B test -X
+        run: mvn -B test
 
       - name: Print test logs on failure
         if: failure()

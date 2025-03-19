@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +20,6 @@ import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
-import pl.kamann.testcontainers.config.TestContainersConfig;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -36,7 +34,6 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@Import(TestContainersConfig.class)
 public class PasswordResetServiceTest {
 
     @MockBean
@@ -164,7 +161,7 @@ public class PasswordResetServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionForErrorSendingEmail() throws MessagingException {
+    void shouldThrowExceptionForErrorSendingEmail() {
         AppUser appUser = new AppUser();
         appUser.setFirstName("John");
         appUser.setLastName("Doe");
