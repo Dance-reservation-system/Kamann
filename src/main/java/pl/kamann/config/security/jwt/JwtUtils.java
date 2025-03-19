@@ -25,7 +25,7 @@ public class JwtUtils {
     private final long jwtExpiration;
 
     public JwtUtils(
-            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.secret:dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9yanNvbndlYnRva2Vuc2lnbmluZ2V4YW1wbGU=}") String secret,
             @Value("${jwt.expiration:36000000}") long jwtExpiration // default 10 hours
     ) {
         byte[] decodedKey = Base64.getDecoder().decode(secret);
