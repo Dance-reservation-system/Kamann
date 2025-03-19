@@ -17,9 +17,8 @@ public class TestSecurityConfig {
     @Bean
     @Primary
     public JwtUtils jwtUtils() {
-        // Generate a fixed key for testing
         byte[] keyBytes = new byte[32];
-        Arrays.fill(keyBytes, (byte) 1); // Use a fixed pattern for tests
+        Arrays.fill(keyBytes, (byte) 1);
         SecretKey testKey = Keys.hmacShaKeyFor(keyBytes);
         
         return new JwtUtils(testKey, 3600000L); // 1 hour expiration for tests

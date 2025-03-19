@@ -5,6 +5,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
@@ -22,6 +23,7 @@ import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
+import pl.kamann.testcontainers.config.TestContainerConfig;
 
 import java.util.List;
 import java.util.Locale;
@@ -30,8 +32,9 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@Profile("test")
+@ActiveProfiles("test")
 @Transactional
+@Import(TestContainerConfig.class)
 public class ConfirmUserServiceTest {
 
     @Mock

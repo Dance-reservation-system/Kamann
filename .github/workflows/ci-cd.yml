@@ -16,7 +16,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-          cache: maven  # Built-in caching for Maven dependencies
+          cache: maven
 
       - name: Set environment variables
         env:
