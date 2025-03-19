@@ -1,6 +1,8 @@
 package pl.kamann.services;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.RefreshToken;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
@@ -50,8 +53,9 @@ public class AuthService {
     private final ValidationService validationService;
     private final UserLookupService userLookupService;
     private final RoleLookupService roleLookupService;
+    private final RefreshTokenService refreshTokenService;
 
-    public LoginResponse login(@Valid LoginRequest request) {
+    public LoginResponse login(@Valid LoginRequest request, HttpServletResponse response) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
@@ -59,7 +63,12 @@ public class AuthService {
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
             log.info("User logged in successfully: email={}", authUser.getEmail());
-            return new LoginResponse(jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles().stream().map(Role::getName).toList())));
+
+            String accessToken = jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles().stream().map(Role::getName).toList()));
+            String refreshToken = refreshTokenService.generateRefreshToken(authUser);
+
+            response.addCookie(setCookie(refreshToken));
+            return new LoginResponse(accessToken);
         } catch (DisabledException e) {
             log.warn("Attempted login with unconfirmed email: {}", request.email());
             throw new ApiException(
@@ -75,6 +84,49 @@ public class AuthService {
                     AuthCodes.UNAUTHORIZED.name()
             );
         }
+    }
+
+
+    public LoginResponse refreshToken(String refreshToken, HttpServletResponse response) {
+        log.info("Refreshing token: refreshToken={}", refreshToken);
+        response.addCookie(unSetCookie());
+        validationService.validateRefreshToken(refreshToken);
+
+        RefreshToken token = refreshTokenService.getRefreshToken(refreshToken).orElseThrow(() ->
+                new ApiException("Invalid refresh token",
+                        HttpStatus.UNAUTHORIZED,
+                        AuthCodes.INVALID_TOKEN.name()));
+
+        refreshTokenService.deleteRefreshToken(token);
+
+        validationService.isRefreshTokenExpired(token);
+
+        AuthUser authUser = token.getAuthUser();
+        String accessToken = jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles().stream().map(Role::getName).toList()));
+        String newRefreshToken = refreshTokenService.generateRefreshToken(authUser);
+
+        log.info("Token refreshed successfully: email={}", authUser.getEmail());
+
+        response.addCookie(setCookie(newRefreshToken));
+        return new LoginResponse(accessToken);
+    }
+
+    private Cookie setCookie(String refreshToken) {
+        Cookie cookie = new Cookie("refresh_token", refreshToken);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/api/v1/auth/refresh-token");
+        cookie.setMaxAge(60 * 60 * 24);
+
+        return cookie;
+    }
+
+    private Cookie unSetCookie() {
+        Cookie cookie = new Cookie("refresh_token", "");
+        cookie.setHttpOnly(true);
+        cookie.setPath("/api/v1/auth/refresh-token");
+        cookie.setMaxAge(0);
+
+        return cookie;
     }
 
     @Transactional

@@ -1,5 +1,6 @@
 package pl.kamann.auth.service;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
+import pl.kamann.services.RefreshTokenService;
 import pl.kamann.services.factory.UserFactory;
 import pl.kamann.config.exception.services.ValidationService;
 
@@ -77,6 +79,12 @@ class AuthServiceTest {
     @Mock
     private RoleLookupService roleLookupService;
 
+    @Mock
+    private HttpServletResponse httpServletResponse;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -103,7 +111,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
         when(jwtUtils.generateToken(loginRequest.email(), claims)).thenReturn("token");
 
-        LoginResponse response = authService.login(loginRequest);
+        LoginResponse response = authService.login(loginRequest, httpServletResponse);
 
         assertNotNull(response);
         assertEquals("token", response.token());
@@ -119,7 +127,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenThrow(new ApiException("Email not confirmed.", HttpStatus.UNAUTHORIZED, AuthCodes.EMAIL_NOT_CONFIRMED.getCode()));
 
-        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest, httpServletResponse));
 
         assertEquals("Email not confirmed.", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
@@ -134,7 +142,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenThrow(new ApiException("Invalid email address.", HttpStatus.NOT_FOUND, "INVALID_EMAIL"));
 
-        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest,  httpServletResponse));
 
         assertEquals("Invalid email address.", exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
@@ -149,7 +157,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenThrow(new ApiException("Invalid password.", HttpStatus.UNAUTHORIZED, "INVALID_PASSWORD"));
 
-        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest, httpServletResponse));
 
         assertEquals("Invalid password.", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());

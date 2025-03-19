@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,9 @@ public class AuthUser implements UserDetails, Serializable {
 
     @OneToOne(mappedBy = "authUser", cascade = CascadeType.ALL, orphanRemoval = true)
     private AppUser appUser;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RefreshToken> refreshToken;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

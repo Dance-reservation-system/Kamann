@@ -2,6 +2,7 @@ package pl.kamann.controllers.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,8 @@ import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.PasswordResetService;
 
+import java.net.http.HttpResponse;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -32,8 +35,14 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
-    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
-        return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+        return ResponseEntity.status(HttpStatus.OK).body(authService.login(request, response));
+    }
+
+    @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh Token", description = "Refreshes the JWT token.")
+    public ResponseEntity<LoginResponse> refreshToken(@CookieValue("refresh_token") String refreshToken, HttpServletResponse response) {
+        return ResponseEntity.status(HttpStatus.OK).body(authService.refreshToken(refreshToken, response));
     }
 
     @PostMapping("/register-client")
