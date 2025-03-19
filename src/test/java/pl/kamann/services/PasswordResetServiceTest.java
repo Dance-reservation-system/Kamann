@@ -190,19 +190,15 @@ public class PasswordResetServiceTest {
     }
 
     private String generateValidJwtToken(String email) {
-        SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-
-        when(jwtUtils.getSecretKey()).thenReturn(secretKey);
-
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + 3600000); // 1 hour to expire
+        Date expiryDate = new Date(now.getTime() + 3600000);
 
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .claim("TokenType", TokenType.CONFIRMATION.toString())
-                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .signWith(jwtUtils.getSecretKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 

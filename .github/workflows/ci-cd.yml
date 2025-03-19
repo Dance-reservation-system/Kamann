@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -21,6 +21,15 @@ jobs:
 
       - name: Enable Docker container reuse
         run: echo "testcontainers.reuse.enable=true" > ~/.testcontainers.properties
+
+      - name: Check if Docker is running
+        run: docker info
+
+      - name: Allow Testcontainers to access Docker
+        run: sudo chmod 666 /var/run/docker.sock
+
+      - name: Pull PostgreSQL image for Testcontainers
+        run: docker pull postgres:16
 
       - name: Cache Maven packages
         uses: actions/cache@v3
@@ -37,7 +46,7 @@ jobs:
           SPRING_TEST_CONTEXT_FAILURE_THRESHOLD: 5
           TESTCONTAINERS_RYUK_DISABLED: true
           TESTCONTAINERS_CHECKS_DISABLE: true
-          DOCKER_HOST: unix:///var/run/docker.sock
+          DOCKER_HOST: tcp://localhost:2375
         run: mvn -B test -X
 
       - name: Print test logs on failure
