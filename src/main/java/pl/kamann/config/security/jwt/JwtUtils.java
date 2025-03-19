@@ -29,22 +29,18 @@ public class JwtUtils {
         Long expiration = environment.getProperty("jwt.expiration", Long.class);
 
         if (secret == null || secret.isEmpty()) {
-            log.warn("JWT secret not configured. Using default secret (NOT RECOMMENDED FOR PRODUCTION)");
-            secret = "dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9yanNvbndlYnRva2Vuc2lnbmluZ2V4YW1wbGU=";
+            throw new IllegalStateException("Missing required property: jwt.secret");
         }
 
         if (expiration == null) {
-            log.info("JWT expiration not configured. Using default expiration (10 hours)");
+            log.info("JWT expiration not configured. Using default (10 hours)");
             expiration = 36000000L;
         }
 
-        byte[] decodedKey = Base64.getDecoder().decode(secret);
-        this.secretKey = Keys.hmacShaKeyFor(decodedKey);
-
+        this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
         this.jwtExpiration = expiration;
     }
 
-    // **Test Constructor**
     public JwtUtils(SecretKey secretKey, long jwtExpiration) {
         this.secretKey = secretKey;
         this.jwtExpiration = jwtExpiration;
