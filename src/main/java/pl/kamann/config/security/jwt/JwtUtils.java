@@ -44,6 +44,12 @@ public class JwtUtils {
         this.jwtExpiration = expiration;
     }
 
+    // **Test Constructor**
+    public JwtUtils(SecretKey secretKey, long jwtExpiration) {
+        this.secretKey = secretKey;
+        this.jwtExpiration = jwtExpiration;
+    }
+
 
     public String generateToken(String email, Set<Role> roles) {
         Map<String, Object> claims = createClaims("roles", roles.stream().map(Role::getName).toList());
