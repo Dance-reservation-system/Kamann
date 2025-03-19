@@ -30,11 +30,7 @@ public class TestContainersConfig {
 
     @DynamicPropertySource
     static void registerPgProperties(DynamicPropertyRegistry registry) {
-        System.out.println("XXX Registering Testcontainers properties...");
-        registry.add("spring.datasource.url", () -> {
-            System.out.println("XXX JDBC URL: " + POSTGRES_CONTAINER.getJdbcUrl());
-            return POSTGRES_CONTAINER.getJdbcUrl();
-        });
+        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
         registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
     }
