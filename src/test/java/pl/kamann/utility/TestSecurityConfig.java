@@ -21,6 +21,6 @@ public class TestSecurityConfig {
         Arrays.fill(keyBytes, (byte) 1);
         SecretKey testKey = Keys.hmacShaKeyFor(keyBytes);
         
-        return new JwtUtils(testKey, 3600000L); // 1 hour expiration for tests
+        return new JwtUtils(testKey, 3600000L); // 1 hour expiration
     }
 }

@@ -3,13 +3,10 @@ package pl.kamann.services.admin;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.dtos.FacilityDto;
 import pl.kamann.repositories.FacilityRepository;
-import pl.kamann.testcontainers.config.TestContainerConfig;
 
 import java.time.LocalTime;
 
@@ -19,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@Import(TestContainerConfig.class)
 class FacilityIntegrationTest {
 
     @Autowired

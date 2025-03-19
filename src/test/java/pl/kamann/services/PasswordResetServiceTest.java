@@ -6,10 +6,8 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +20,6 @@ import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
-import pl.kamann.testcontainers.config.TestContainerConfig;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -37,7 +34,6 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@Import(TestContainerConfig.class)
 public class PasswordResetServiceTest {
 
     @MockBean
@@ -57,9 +53,6 @@ public class PasswordResetServiceTest {
 
     @Autowired
     private AppUserRepository appUserRepository;
-
-    @Value("${jwt.secret}")
-    private String secret;
 
     @Test
     void shouldRequestPasswordReset() throws MessagingException {
