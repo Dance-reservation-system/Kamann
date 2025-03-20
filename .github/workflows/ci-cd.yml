@@ -32,6 +32,8 @@ jobs:
           SPRING_PROFILES_ACTIVE: test
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRATION_TIME: ${{ secrets.JWT_EXPIRATION_TIME }}
+          CONFIRMATION_LINK: ${{ secrets.CONFIRMATION_LINK }}
+          RESET_PASSWORD_LINK: ${{ secrets.RESET_PASSWORD_LINK }}
           SPRING_TEST_CONTEXT_FAILURE_THRESHOLD: 5
         run: mvn -B test
 
