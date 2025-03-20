@@ -1,14 +1,13 @@
 package pl.kamann.config.security.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.entities.appuser.TokenType;
@@ -18,77 +17,53 @@ import java.util.*;
 
 @Slf4j
 @Component
+@ConfigurationProperties(prefix = "jwt")
 public class JwtUtils {
 
+    @Setter
+    private String secret;
+    @Setter
+    private long expiration;
+
     @Getter
-    private final SecretKey secretKey;
-    private final long jwtExpiration;
+    private SecretKey secretKey;
 
-    public JwtUtils(Environment environment) {
-        String secret = environment.getProperty("jwt.secret");
-        Long expiration = environment.getProperty("jwt.expiration", Long.class);
+    public JwtUtils() {}
 
+    @PostConstruct
+    public void init() {
         if (secret == null || secret.isEmpty()) {
             throw new IllegalStateException("Missing required property: jwt.secret");
         }
-
-        if (expiration == null) {
-            log.info("JWT expiration not configured. Using default (10 hours)");
-            expiration = 36000000L;
-        }
-
         this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
-        this.jwtExpiration = expiration;
+        log.info("JWT Secret Key successfully initialized.");
     }
-
-    public JwtUtils(SecretKey secretKey, long jwtExpiration) {
-        this.secretKey = secretKey;
-        this.jwtExpiration = jwtExpiration;
-    }
-
 
     public String generateToken(String email, Set<Role> roles) {
-        Map<String, Object> claims = createClaims("roles", roles.stream().map(Role::getName).toList());
-        return generateTokenWithClaims(email, claims, jwtExpiration);
+        Map<String, Object> claims = Map.of("roles", roles.stream().map(Role::getName).toList());
+        return generateTokenWithClaims(email, claims, expiration);
     }
 
     public String generateTokenWithFlag(String email, TokenType flag, long expirationTime) {
-        Map<String, Object> claims = createClaims("TokenType", flag.toString());
-
-        return generateTokenWithClaims(email, claims, expirationTime);
-    }
-
-    private Map<String, Object> createClaims(String key, Object value) {
-        return Collections.singletonMap(key, value);
+        return generateTokenWithClaims(email, Map.of("TokenType", flag.toString()), expirationTime);
     }
 
     public String generateTokenWithClaims(String email, Map<String, Object> claims, long expiration) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
-
-        String token = Jwts.builder()
-                .setHeaderParam("typ", "JWT")
+        return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(email)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
-
-        log.info("Generated token for {}", email);
-
-        return token;
     }
 
     public String extractEmail(String token) {
-        validateToken(token);
-
         return extractClaim(token, Claims::getSubject);
     }
 
     public <T> T extractClaim(String token, java.util.function.Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
+        return claimsResolver.apply(extractAllClaims(token));
     }
 
     private Claims extractAllClaims(String token) {
@@ -99,22 +74,19 @@ public class JwtUtils {
                     .parseClaimsJws(token)
                     .getBody();
         } catch (JwtException e) {
-            log.error("Failed to extract claims from token: {}", e.getMessage());
+            log.error("JWT Parsing failed: {}", e.getMessage());
             throw new RuntimeException("Invalid JWT token", e);
         }
     }
 
-    public boolean validateToken(String token, TokenType... tokenType) {
+    public boolean validateToken(String token, TokenType... expectedType) {
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+            Claims claims = extractAllClaims(token);
 
-            if(tokenType.length > 0) {
+            if (expectedType.length > 0) {
                 String tokenTypeString = claims.get("TokenType", String.class);
-                if(!tokenTypeString.equals(tokenType[0].name())) {
+                if (!expectedType[0].name().equals(tokenTypeString)) {
+                    log.warn("⚠Token type mismatch: Expected {}, found {}", expectedType[0].name(), tokenTypeString);
                     return false;
                 }
             }
@@ -122,13 +94,12 @@ public class JwtUtils {
             return !isTokenExpired(token);
         } catch (JwtException e) {
             log.error("JWT validation failed: {}", e.getMessage());
+            return false;
         }
-        return false;
     }
 
     private boolean isTokenExpired(String token) {
-        Date expiration = extractClaim(token, Claims::getExpiration);
-        return expiration.before(new Date());
+        return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
     public Optional<String> extractTokenFromRequest(HttpServletRequest request) {
