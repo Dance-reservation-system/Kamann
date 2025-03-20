@@ -19,8 +19,6 @@ import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.PasswordResetService;
 
-import java.net.http.HttpResponse;
-
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

@@ -26,11 +26,11 @@ public class RefreshTokenService {
         return refreshToken.getToken();
     }
 
-    Optional<RefreshToken> getRefreshToken(String token) {
+    public Optional<RefreshToken> getRefreshToken(String token) {
         return refreshTokenRepository.findByToken(token);
     }
 
-    void deleteRefreshToken(RefreshToken token) {
+    public void deleteRefreshToken(RefreshToken token) {
         refreshTokenRepository.delete(token);
     }
 }
