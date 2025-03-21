@@ -69,6 +69,10 @@ public class Event {
     @OneToMany(mappedBy = "event", fetch = FetchType.LAZY)
     private List<OccurrenceEvent> occurrences = new ArrayList<>();
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "difficulty")
+    private EventDifficulty eventDifficulty;
+
     @PostLoad
     @PostPersist
     @PostUpdate
