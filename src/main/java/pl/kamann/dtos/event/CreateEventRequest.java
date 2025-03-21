@@ -48,6 +48,7 @@ public record CreateEventRequest(
         String eventTypeName,
 
         @Schema(description = "Difficulty of the event", example = "INTERMEDIATE")
+        @NotBlank
         EventDifficulty eventDifficulty
 ) {
         public CreateEventRequest {

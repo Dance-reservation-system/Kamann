@@ -70,7 +70,7 @@ public class Event {
     private List<OccurrenceEvent> occurrences = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "difficulty")
+    @Column(name = "difficulty", nullable = false)
     private EventDifficulty eventDifficulty;
 
     @PostLoad
