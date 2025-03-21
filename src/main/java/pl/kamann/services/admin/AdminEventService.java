@@ -29,6 +29,7 @@ import pl.kamann.config.pagination.PaginationService;
 import pl.kamann.config.pagination.PaginationUtil;
 import pl.kamann.config.exception.services.EventLookupService;
 import pl.kamann.config.exception.services.UserLookupService;
+import pl.kamann.services.admin.update.UpdateCriteria;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -91,6 +92,12 @@ public class AdminEventService {
         eventRepository.save(event);
 
         return eventMapper.toEventUpdateResponse(event);
+    }
+
+    @Transactional
+    public OccurrenceEventUpdateResponse updateEventOccurrences(Long id, OccurrenceEventUpdateRequest requestDto) {
+        UpdateCriteria updateCriteria = requestDto.updateCriteria();
+
     }
 
     @Transactional

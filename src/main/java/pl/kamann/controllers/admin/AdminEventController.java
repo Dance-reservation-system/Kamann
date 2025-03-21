@@ -14,6 +14,7 @@ import pl.kamann.dtos.event.EventUpdateRequest;
 import pl.kamann.dtos.event.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
+import pl.kamann.dtos.event.OccurrenceEventUpdateRequest;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.services.admin.AdminEventService;
 
@@ -58,6 +59,15 @@ public class AdminEventController {
             @RequestBody EventUpdateRequest requestDto
     ) {
         return ResponseEntity.ok(adminEventService.updateEvent(id, requestDto));
+    }
+
+    @PatchMapping("/{id}/occurrences}")
+    @Operation(summary = "Update all occurrence events details", description = "Updates occurrence event details partially – only fields provided in the request are updated.")
+    public ResponseEntity<EventUpdateResponse> updateAllOccurrenceEvent(
+            @RequestBody Long id,
+            @RequestBody OccurrenceEventUpdateRequest requestDto
+    ) {
+        return ResponseEntity.ok(adminEventService.updateEventOccurrences(id, requestDto));
     }
 
     @PostMapping("/{id}/cancel")
