@@ -27,10 +27,11 @@ public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent
 
     @Query("""
             SELECT o FROM OccurrenceEvent o
+            JOIN FETCH o.event  -- Ensure Event is eagerly loaded
             WHERE (:scope = 'UPCOMING' AND o.start >= CURRENT_TIMESTAMP AND :user MEMBER OF o.participants)
                OR (:scope = 'AVAILABLE' AND o.start >= CURRENT_TIMESTAMP AND :user NOT MEMBER OF o.participants)
                OR (:scope = 'PAST' AND o.start < CURRENT_TIMESTAMP)
-            """)
+        """)
     Page<OccurrenceEvent> findFilteredOccurrences(
             @Param("scope") String scope,
             @Param("user") AppUser user,
