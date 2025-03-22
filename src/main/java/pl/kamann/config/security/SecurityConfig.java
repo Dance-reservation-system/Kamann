@@ -103,6 +103,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Profile("prod")
     public CorsConfigurationSource corsConfigurationSourceProd() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("https://kamann-production.up.railway.app"));
@@ -118,6 +119,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Profile("dev")
     public CorsConfigurationSource corsConfigurationSourceDev() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:8080"));
