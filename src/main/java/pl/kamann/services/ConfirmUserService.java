@@ -43,7 +43,7 @@ public class ConfirmUserService {
 
 
     private void sendConfirmationEmail(AuthUser authUser, String token) {
-        String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
+        String confirmationLink = tokenService.generateLink(token, tokenService.getConfirmationLink());
         validationService.validateAuthUser(authUser);
 
         if(authUser.getRoles().stream().anyMatch(role -> role.getName().equals("INSTRUCTOR"))) {

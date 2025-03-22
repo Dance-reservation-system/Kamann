@@ -19,14 +19,9 @@ public class TokenService {
 
     private final JwtUtils jwtUtils;
 
-    public String generateConfirmationLink(String token, String confirmationLink) {
-        return confirmationLink + token;
+    public String generateLink(String baseUrl, String token) {
+        return baseUrl + token;
     }
-
-    public String generateResetPasswordLink(String token, String resetPasswordLink) {
-        return resetPasswordLink + token;
-    }
-
     public String generateToken(String email, TokenType tokenType, long expirationTime) {
         return jwtUtils.generateTokenWithFlag(email, tokenType, expirationTime);
     }

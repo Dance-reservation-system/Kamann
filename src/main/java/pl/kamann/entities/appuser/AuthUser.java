@@ -44,7 +44,7 @@ public class AuthUser implements UserDetails, Serializable {
     @OneToOne(mappedBy = "authUser", cascade = CascadeType.ALL, orphanRemoval = true)
     private AppUser appUser;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "authUser", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<RefreshToken> refreshTokens;
 
     @Override
