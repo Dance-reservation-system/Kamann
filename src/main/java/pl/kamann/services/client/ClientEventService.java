@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
@@ -26,6 +27,7 @@ import pl.kamann.config.exception.services.UserLookupService;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ClientEventService {
     private final OccurrenceEventRepository occurrenceEventRepository;
     private final OccurrenceEventMapper occurrenceEventMapper;
