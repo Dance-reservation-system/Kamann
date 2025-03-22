@@ -35,7 +35,6 @@ import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.RefreshTokenService;
 import pl.kamann.services.factory.UserFactory;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -108,12 +107,11 @@ class AuthServiceTest {
                 .build();
 
         Authentication mockAuthentication = new UsernamePasswordAuthenticationToken(user, "encodedPassword", user.getAuthorities());
-        Map<String, Object> claims = jwtUtils.createClaims("roles", user.getRoles().stream().map(Role::getName).toList());
         String generatedAccessToken = "accessToken";
         String generatedRefreshToken = "refreshToken";
 
         when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
-        when(jwtUtils.generateToken(loginRequest.email(), claims)).thenReturn(generatedAccessToken);
+        when(jwtUtils.generateToken(loginRequest.email(), user.getRoles())).thenReturn(generatedAccessToken);
         when(refreshTokenService.generateRefreshToken(user)).thenReturn(generatedRefreshToken);
 
         LoginResponse response = authService.login(loginRequest, httpServletResponse);
@@ -132,7 +130,7 @@ class AuthServiceTest {
         assertTrue(refreshTokenCookie.isHttpOnly());
 
         verify(authenticationManager).authenticate(any(Authentication.class));
-        verify(jwtUtils).generateToken(loginRequest.email(), claims);
+        verify(jwtUtils).generateToken(loginRequest.email(), user.getRoles());
         verify(refreshTokenService).generateRefreshToken(user);
         verify(httpServletResponse).addCookie(any());
     }

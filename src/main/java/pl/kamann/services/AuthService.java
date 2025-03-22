@@ -64,7 +64,7 @@ public class AuthService {
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
             log.info("User logged in successfully: email={}", authUser.getEmail());
 
-            String accessToken = jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles().stream().map(Role::getName).toList()));
+            String accessToken = jwtUtils.generateToken(authUser.getEmail(), authUser.getRoles());
             String refreshToken = refreshTokenService.generateRefreshToken(authUser);
 
             response.addCookie(setCookie(refreshToken));
@@ -102,7 +102,7 @@ public class AuthService {
         validationService.isRefreshTokenExpired(token);
 
         AuthUser authUser = token.getAuthUser();
-        String accessToken = jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles().stream().map(Role::getName).toList()));
+        String accessToken = jwtUtils.generateToken(authUser.getEmail(), authUser.getRoles());
         String newRefreshToken = refreshTokenService.generateRefreshToken(authUser);
 
         log.info("Token refreshed successfully: email={}", authUser.getEmail());

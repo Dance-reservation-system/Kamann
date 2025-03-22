@@ -59,7 +59,7 @@ The containers contains:
 which means there is no need to setup anything more
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ## 📚 API Documentation
