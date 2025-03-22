@@ -1,28 +1,27 @@
 package pl.kamann.services;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.RefreshToken;
 import pl.kamann.repositories.RefreshTokenRepository;
-import pl.kamann.testcontainers.config.TestContainersConfig;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = {TestContainersConfig.class})
+@SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 public class RefreshTokenServiceTest {
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
@@ -58,8 +57,9 @@ public class RefreshTokenServiceTest {
 
         Optional<RefreshToken> actualRefreshToken = refreshTokenService.getRefreshToken(token);
 
-        assertThat(actualRefreshToken).isPresent();
-        assertThat(actualRefreshToken.get()).isEqualTo(refreshToken);
+        assertAll(
+                () -> assertThat(actualRefreshToken).isPresent(),
+                () -> assertThat(actualRefreshToken.get()).isEqualTo(refreshToken));
     }
 
     @Test
@@ -71,5 +71,4 @@ public class RefreshTokenServiceTest {
 
         verify(refreshTokenRepository, times(1)).delete(refreshToken);
     }
-
 }

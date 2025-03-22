@@ -139,13 +139,13 @@ public class DataSeeder {
         );
 
         events = List.of(
-            new EventData("Yoga Workshop", "Intensive yoga session", LocalDateTime.now().plusDays(1), 120, 15, eventTypes.get("Yoga"), null),
-            new EventData("Dance Workshop", "Intensive dance session", LocalDateTime.now().plusDays(1).withHour(17).withMinute(0), 90, 20, eventTypes.get("Dance"), null),
-            new EventData("Morning Tango", "Relaxing Tango session", LocalDateTime.now().minusDays(8).withHour(19).withMinute(0), 90, 25, eventTypes.get("Dance"), null),
-            new EventData("Pole Dance Workshop", "Try this", LocalDateTime.now().minusDays(10).withHour(17).withMinute(0), 100, 30, eventTypes.get("PoleDance"), null),
-            new EventData("Evening Yoga", "Relaxing yoga session", LocalDateTime.now().minusDays(5).withHour(16).withMinute(0), 100, 30, eventTypes.get("Yoga"), null),
-            new EventData("Morning Yoga", "Daily morning yoga sessions", LocalDateTime.now().plusDays(2).withHour(7).withMinute(0), 60, 20, eventTypes.get("Yoga"), "FREQ=WEEKLY;BYDAY=MO,WE,FR;INTERVAL=1;COUNT=12"),
-            new EventData("Evening Pole Dance", "Weekly pole dance classes", LocalDateTime.now().plusDays(3).withHour(19).withMinute(0), 75, 12, eventTypes.get("PoleDance"), "FREQ=WEEKLY;BYDAY=TU,TH;INTERVAL=1;COUNT=10")
+                new EventData("Yoga Workshop", "Intensive yoga session", LocalDateTime.now().plusDays(1), 120, 15, eventTypes.get("Yoga"), null),
+                new EventData("Dance Workshop", "Intensive dance session", LocalDateTime.now().plusDays(1).withHour(17).withMinute(0), 90, 20, eventTypes.get("Dance"), null),
+                new EventData("Morning Tango", "Relaxing Tango session", LocalDateTime.now().minusDays(8).withHour(19).withMinute(0), 90, 25, eventTypes.get("Dance"), null),
+                new EventData("Pole Dance Workshop", "Try this", LocalDateTime.now().minusDays(10).withHour(17).withMinute(0), 100, 30, eventTypes.get("PoleDance"), null),
+                new EventData("Evening Yoga", "Relaxing yoga session", LocalDateTime.now().minusDays(5).withHour(16).withMinute(0), 100, 30, eventTypes.get("Yoga"), null),
+                new EventData("Morning Yoga", "Daily morning yoga sessions", LocalDateTime.now().plusDays(2).withHour(7).withMinute(0), 60, 20, eventTypes.get("Yoga"), "FREQ=WEEKLY;BYDAY=MO,WE,FR;INTERVAL=1;COUNT=12"),
+                new EventData("Evening Pole Dance", "Weekly pole dance classes", LocalDateTime.now().plusDays(3).withHour(19).withMinute(0), 75, 12, eventTypes.get("PoleDance"), "FREQ=WEEKLY;BYDAY=TU,TH;INTERVAL=1;COUNT=10")
         );
 
         events.forEach(event -> {
@@ -193,11 +193,11 @@ public class DataSeeder {
     private void seedAttendanceForEvent(EventData eventData) {
         eventRepository.findByTitle(eventData.getTitle()).flatMap(event -> occurrenceEventRepository.findOccurrencesByEventId(event.getId())
                 .stream().findFirst()).ifPresent(occurrence -> {
-                    if (!occurrence.getParticipants().contains(client)) {
-                        createAttendance(client, occurrence);
-                        occurrence.getParticipants().add(client);
-                        occurrenceEventRepository.save(occurrence);
-                    }
+            if (!occurrence.getParticipants().contains(client)) {
+                createAttendance(client, occurrence);
+                occurrence.getParticipants().add(client);
+                occurrenceEventRepository.save(occurrence);
+            }
         });
     }
 

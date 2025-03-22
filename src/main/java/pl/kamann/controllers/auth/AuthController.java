@@ -35,7 +35,7 @@ public class AuthController {
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.login(request, response));
-    }
+   }
 
     @PostMapping("/refresh-token")
     @Operation(summary = "Refresh Token", description = "Refreshes the JWT token.")

@@ -98,10 +98,10 @@ public class AuthService {
                         AuthCodes.INVALID_TOKEN.name()));
 
         refreshTokenService.deleteRefreshToken(token);
-
         validationService.isRefreshTokenExpired(token);
 
         AuthUser authUser = token.getAuthUser();
+        authUserRepository.save(authUser);
         String accessToken = jwtUtils.generateToken(authUser.getEmail(), authUser.getRoles());
         String newRefreshToken = refreshTokenService.generateRefreshToken(authUser);
 
@@ -111,22 +111,20 @@ public class AuthService {
         return new LoginResponse(accessToken);
     }
 
-    private Cookie setCookie(String refreshToken) {
+    private Cookie createCookie(String refreshToken, int maxAge) {
         Cookie cookie = new Cookie("refresh_token", refreshToken);
         cookie.setHttpOnly(true);
         cookie.setPath("/api/v1/auth/refresh-token");
-        cookie.setMaxAge(60 * 60 * 24);
-
+        cookie.setMaxAge(maxAge);
         return cookie;
     }
 
-    private Cookie unSetCookie() {
-        Cookie cookie = new Cookie("refresh_token", "");
-        cookie.setHttpOnly(true);
-        cookie.setPath("/api/v1/auth/refresh-token");
-        cookie.setMaxAge(0);
+    private Cookie setCookie(String refreshToken) {
+        return createCookie(refreshToken, 60 * 60 * 24);
+    }
 
-        return cookie;
+    private Cookie unSetCookie() {
+        return createCookie("", 0);
     }
 
     @Transactional

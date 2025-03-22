@@ -29,19 +29,21 @@ import java.util.concurrent.*;
 @Slf4j
 public class ConfirmUserService {
 
-    private final EmailSender emailSender;
     private final TokenService tokenService;
-    private final JwtUtils jwtUtils;
-    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-    private final AuthUserRepository authUserRepository;
-    private final ExceptionHandlerService exceptionHandlerService;
-
-    private final Map<String, ScheduledFuture<?>> deletionTasks = new ConcurrentHashMap<>();
     private final ValidationService validationService;
     private final UserLookupService userLookupService;
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+    private final ExceptionHandlerService exceptionHandlerService;
+
+    private final EmailSender emailSender;
+    private final JwtUtils jwtUtils;
+
+    private final AuthUserRepository authUserRepository;
+    private final Map<String, ScheduledFuture<?>> deletionTasks = new ConcurrentHashMap<>();
+
 
     private void sendConfirmationEmail(AuthUser authUser, String token) {
-        String confirmationLink = tokenService.generateLink(token, tokenService.getConfirmationLink());
+        String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
         validationService.validateAuthUser(authUser);
 
         if(authUser.getRoles().stream().anyMatch(role -> role.getName().equals("INSTRUCTOR"))) {
@@ -61,7 +63,7 @@ public class ConfirmUserService {
     }
 
     private void handleEmailSending(AuthUser authUser) {
-        String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION);
+        String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION, 15 * 60 * 1000);
         sendConfirmationEmail(authUser, token);
         scheduleUserDeletion(authUser.getEmail());
     }

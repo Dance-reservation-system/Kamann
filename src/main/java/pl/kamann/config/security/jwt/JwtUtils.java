@@ -44,12 +44,10 @@ public class JwtUtils {
     }
 
     public String generateTokenWithFlag(String email, TokenType flag, long expirationTime) {
-        Map<String, Object> claims = createClaims("TokenType", flag.toString());
-
-        return generateTokenWithClaims(email, claims, expirationTime);
+        return generateTokenWithClaims(email, Map.of("TokenType", flag.toString()), expirationTime);
     }
 
-    private Map<String, Object> createClaims(String key, Object value) {
+    public Map<String, Object> createClaims(String key, Object value) {
         return Collections.singletonMap(key, value);
     }
 
