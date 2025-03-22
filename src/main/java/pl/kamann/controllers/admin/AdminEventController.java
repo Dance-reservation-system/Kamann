@@ -67,7 +67,7 @@ public class AdminEventController {
     )
     public ResponseEntity<EventCancelResponse> cancelEvent(
             @PathVariable Long id) {
-        adminEventService.cancelEvent(id, EventStatus.CANCELED);
+        adminEventService.cancelEvent(id);
         return ResponseEntity.ok(new EventCancelResponse(id, "Event successfully canceled."));
     }
 
