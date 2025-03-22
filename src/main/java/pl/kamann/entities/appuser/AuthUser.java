@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,6 +57,8 @@ public class AuthUser implements UserDetails, Serializable {
 
     @Enumerated(EnumType.STRING)
     private AuthUserStatus status;
+
+    private LocalDateTime deletionRequestedAt;
 
     @Override
     public String getUsername() {

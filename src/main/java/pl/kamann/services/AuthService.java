@@ -26,14 +26,13 @@ import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AuthUser;
-import pl.kamann.entities.appuser.RefreshToken;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.factory.UserFactory;
+
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -55,6 +54,8 @@ public class AuthService {
     private final RoleLookupService roleLookupService;
     private final RefreshTokenService refreshTokenService;
 
+    private final ScheduledTaskService scheduledTaskService;
+
     public LoginResponse login(@Valid LoginRequest request, HttpServletResponse response) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -62,6 +63,12 @@ public class AuthService {
             );
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
+
+            if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
+                scheduledTaskService.cancelTask(authUser.getEmail());
+                authUser.setStatus(AuthUserStatus.ACTIVE);
+                authUser.setDeletionRequestedAt(null);
+            }
             log.info("User logged in successfully: email={}", authUser.getEmail());
 
             String accessToken = jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles().stream().map(Role::getName).toList()));
@@ -169,5 +176,17 @@ public class AuthService {
 
         AppUser appUser = userLookupService.findUserByEmail(email);
         return appUserMapper.toAppUserResponseDto(appUser);
+    }
+
+    public void requestAccountDeletion(String email) {
+        log.info("Requesting account deletion for email: {}", email);
+
+        AuthUser authUser = userLookupService.findUserByEmail(email).getAuthUser();
+
+        authUser.setStatus(AuthUserStatus.PENDING_DELETION);
+        authUser.setDeletionRequestedAt(LocalDateTime.now());
+
+        scheduledTaskService.scheduledSoftDeletionUser(authUser);
+        authUserRepository.save(authUser);
     }
 }
