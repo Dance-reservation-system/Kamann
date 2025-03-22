@@ -9,7 +9,10 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.AuthUserStatus;
+import pl.kamann.entities.appuser.RefreshToken;
 import pl.kamann.repositories.AuthUserRepository;
+
+import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
 @Service
@@ -69,6 +72,22 @@ public class ValidationService {
                     HttpStatus.CONFLICT,
                     AuthCodes.EMAIL_ALREADY_EXISTS.name()
             );
+        }
+    }
+
+    public void validateRefreshToken(String refreshToken) {
+        if(refreshToken == null) {
+            throw new ApiException("Refresh token not provided",
+                    HttpStatus.BAD_REQUEST,
+                    AuthCodes.INVALID_TOKEN.name());
+        }
+    }
+
+    public void isRefreshTokenExpired(RefreshToken token) {
+        if(token.getExpirationTime().isBefore(LocalDateTime.now())) {
+            throw new ApiException("Refresh token expired",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.INVALID_TOKEN.name());
         }
     }
 }

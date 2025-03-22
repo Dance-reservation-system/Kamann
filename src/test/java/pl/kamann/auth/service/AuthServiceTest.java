@@ -1,9 +1,12 @@
 package pl.kamann.auth.service;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -16,26 +19,26 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.exception.services.RoleLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AuthUser;
-import pl.kamann.entities.appuser.AuthUserStatus;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
+import pl.kamann.services.RefreshTokenService;
 import pl.kamann.services.factory.UserFactory;
-import pl.kamann.config.exception.services.ValidationService;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -77,6 +80,12 @@ class AuthServiceTest {
     @Mock
     private RoleLookupService roleLookupService;
 
+    @Mock
+    private HttpServletResponse httpServletResponse;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -99,16 +108,34 @@ class AuthServiceTest {
                 .build();
 
         Authentication mockAuthentication = new UsernamePasswordAuthenticationToken(user, "encodedPassword", user.getAuthorities());
-        when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
-        when(jwtUtils.generateToken(loginRequest.email(), user.getRoles())).thenReturn("token");
+        String generatedAccessToken = "accessToken";
+        String generatedRefreshToken = "refreshToken";
 
-        LoginResponse response = authService.login(loginRequest);
+        Map<String, Object> claims = jwtUtils.createClaims("roles", user.getRoles().stream().map(Role::getName).toList());
+
+        when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
+        when(jwtUtils.generateToken(loginRequest.email(), claims)).thenReturn(generatedAccessToken);
+        when(refreshTokenService.generateRefreshToken(user)).thenReturn(generatedRefreshToken);
+
+        LoginResponse response = authService.login(loginRequest, httpServletResponse);
 
         assertNotNull(response);
-        assertEquals("token", response.token());
+        assertEquals(generatedAccessToken, response.token());
+
+        ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
+
+        verify(httpServletResponse).addCookie(cookieCaptor.capture());
+
+        Cookie refreshTokenCookie = cookieCaptor.getAllValues().getFirst();
+
+        assertEquals("refresh_token", refreshTokenCookie.getName());
+        assertEquals(generatedRefreshToken, refreshTokenCookie.getValue());
+        assertTrue(refreshTokenCookie.isHttpOnly());
 
         verify(authenticationManager).authenticate(any(Authentication.class));
-        verify(jwtUtils).generateToken(loginRequest.email(), user.getRoles());
+        verify(jwtUtils).generateToken(loginRequest.email(), claims);
+        verify(refreshTokenService).generateRefreshToken(user);
+        verify(httpServletResponse).addCookie(any());
     }
 
     @Test
@@ -118,7 +145,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenThrow(new ApiException("Email not confirmed.", HttpStatus.UNAUTHORIZED, AuthCodes.EMAIL_NOT_CONFIRMED.getCode()));
 
-        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest, httpServletResponse));
 
         assertEquals("Email not confirmed.", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
@@ -133,7 +160,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenThrow(new ApiException("Invalid email address.", HttpStatus.NOT_FOUND, "INVALID_EMAIL"));
 
-        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest, httpServletResponse));
 
         assertEquals("Invalid email address.", exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
@@ -148,13 +175,65 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenThrow(new ApiException("Invalid password.", HttpStatus.UNAUTHORIZED, "INVALID_PASSWORD"));
 
-        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest, httpServletResponse));
 
         assertEquals("Invalid password.", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
 
         verify(authenticationManager).authenticate(any(Authentication.class));
         verifyNoInteractions(jwtUtils);
+    }
+
+    @Test
+    void shouldRefreshTokenSuccessfully() {
+        String oldRefreshToken = UUID.randomUUID().toString();
+        String newRefreshToken = UUID.randomUUID().toString();
+        String newAccessToken = "newAccessToken";
+
+        AuthUser user = AuthUser.builder()
+                .email("client@example.com")
+                .roles(Set.of(clientRole))
+                .build();
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setToken(oldRefreshToken);
+        refreshToken.setAuthUser(user);
+
+        Map<String, Object> claims = jwtUtils.createClaims("roles", user.getRoles());
+
+        when(refreshTokenService.getRefreshToken(oldRefreshToken)).thenReturn(Optional.of(refreshToken));
+        when(jwtUtils.generateToken(eq(user.getEmail()), eq(claims))).thenReturn(newAccessToken);
+        when(refreshTokenService.generateRefreshToken(user)).thenReturn(newRefreshToken);
+
+        LoginResponse response = authService.refreshToken(oldRefreshToken, httpServletResponse);
+
+        assertNotNull(response);
+        assertEquals(newAccessToken, response.token());
+
+        ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
+
+        verify(httpServletResponse, times(2)).addCookie(cookieCaptor.capture());
+
+        Cookie refreshTokenCookie = cookieCaptor.getAllValues().get(1);
+
+        assertEquals("refresh_token", refreshTokenCookie.getName());
+        assertEquals(newRefreshToken, refreshTokenCookie.getValue());
+        assertTrue(refreshTokenCookie.isHttpOnly());
+
+        verify(refreshTokenService).deleteRefreshToken(refreshToken);
+        verify(refreshTokenService).generateRefreshToken(user);
+        verify(httpServletResponse, times(2)).addCookie(any());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenRefreshTokenIsInvalid() {
+        String invalidToken = "invalidToken";
+        when(refreshTokenService.getRefreshToken(invalidToken)).thenReturn(Optional.empty());
+
+        ApiException exception = assertThrows(ApiException.class, () -> authService.refreshToken(invalidToken, httpServletResponse));
+
+        assertEquals("Invalid refresh token", exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
     }
 
     @Test

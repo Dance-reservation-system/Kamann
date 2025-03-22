@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -71,16 +72,16 @@ public class ConfirmUserServiceTest {
         AppUser appUser = new AppUser();
         appUser.setAuthUser(authUser);
 
-        Mockito.when(jwtUtils.validateToken(Mockito.anyString(), Mockito.any(TokenType.class))).thenReturn(true);
-        Mockito.when(jwtUtils.extractEmail(Mockito.anyString())).thenReturn(email);
-        Mockito.when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
-        Mockito.when(appUserRepository.existsByAuthUser(authUser)).thenReturn(false);
+        when(jwtUtils.validateToken(anyString(), any(TokenType.class))).thenReturn(true);
+        when(jwtUtils.extractEmail(anyString())).thenReturn(email);
+        when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
+        when(appUserRepository.existsByAuthUser(authUser)).thenReturn(false);
 
-        Mockito.when(appUserRepository.save(Mockito.any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         confirmUserService.confirmUserAccount("valid_token");
 
-        Mockito.verify(authUserRepository).save(authUser);
+        verify(authUserRepository).save(authUser);
     }
 
 
@@ -88,7 +89,7 @@ public class ConfirmUserServiceTest {
     public void shouldHandleInvalidToken() {
         String invalidToken = "invalid_token";
         TokenType tokenType = TokenType.CONFIRMATION;
-        Mockito.when(jwtUtils.validateToken(invalidToken, tokenType)).thenReturn(false);
+        when(jwtUtils.validateToken(invalidToken, tokenType)).thenReturn(false);
 
         ApiException apiException = assertThrows(ApiException.class, () ->
                 confirmUserService.confirmUserAccount(invalidToken)
@@ -104,16 +105,16 @@ public class ConfirmUserServiceTest {
         String validToken = "valid_token";
         String email = "user@example.com";
 
-        Mockito.when(jwtUtils.validateToken(validToken, TokenType.CONFIRMATION)).thenReturn(true);
-        Mockito.when(jwtUtils.extractEmail(validToken)).thenReturn(email);
-        Mockito.when(userLookupService.findUserByEmail(email)).thenReturn(null);
+        when(jwtUtils.validateToken(validToken, TokenType.CONFIRMATION)).thenReturn(true);
+        when(jwtUtils.extractEmail(validToken)).thenReturn(email);
+        when(userLookupService.findUserByEmail(email)).thenReturn(null);
 
         ApiException exception = assertThrows(ApiException.class, () ->
                 confirmUserService.confirmUserAccount(validToken)
         );
 
         assertEquals("User not found", exception.getMessage());
-        assertEquals( HttpStatus.NOT_FOUND, exception.getStatus());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
         assertEquals(AuthCodes.USER_NOT_FOUND.name(), exception.getCode());
     }
 
@@ -131,8 +132,8 @@ public class ConfirmUserServiceTest {
 
         confirmUserService.sendConfirmationEmail(authUser);
 
-        Mockito.verify(emailSender, Mockito.times(0))
-                .sendEmail(Mockito.eq(authUser.getEmail()), Mockito.anyString(), Mockito.any(), Mockito.eq("client.registration"));
+        verify(emailSender, times(0))
+                .sendEmail(eq(authUser.getEmail()), anyString(), any(), eq("client.registration"));
     }
 
     @Test
@@ -147,14 +148,14 @@ public class ConfirmUserServiceTest {
         AppUser appUser = new AppUser();
         appUser.setAuthUser(authUser);
 
-        Mockito.when(jwtUtils.validateToken(validToken, TokenType.CONFIRMATION)).thenReturn(true);
-        Mockito.when(jwtUtils.extractEmail(validToken)).thenReturn(email);
-        Mockito.when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
-        Mockito.when(authUserRepository.save(authUser)).thenReturn(authUser);
+        when(jwtUtils.validateToken(validToken, TokenType.CONFIRMATION)).thenReturn(true);
+        when(jwtUtils.extractEmail(validToken)).thenReturn(email);
+        when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
+        when(authUserRepository.save(authUser)).thenReturn(authUser);
 
         confirmUserService.confirmUserAccount(validToken);
 
-        Mockito.verify(authUserRepository, Mockito.times(1)).save(authUser);
+        verify(authUserRepository, times(1)).save(authUser);
         assertTrue(authUser.isEnabled());
     }
 
@@ -169,11 +170,11 @@ public class ConfirmUserServiceTest {
         AppUser appUser = new AppUser();
         appUser.setAuthUser(authUser);
 
-        Mockito.when(jwtUtils.validateToken(Mockito.anyString(), Mockito.any(TokenType.class))).thenReturn(true);
-        Mockito.when(jwtUtils.extractEmail(Mockito.anyString())).thenReturn(email);
-        Mockito.when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
+        when(jwtUtils.validateToken(anyString(), any(TokenType.class))).thenReturn(true);
+        when(jwtUtils.extractEmail(anyString())).thenReturn(email);
+        when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
 
-        Mockito.doThrow(new ApiException("User with email " + email + " is already confirmed",
+        doThrow(new ApiException("User with email " + email + " is already confirmed",
                         HttpStatus.BAD_REQUEST,
                         AuthCodes.USER_ALREADY_CONFIRMED.name()))
                 .when(exceptionHandlerService).handleUserAlreadyConfirmedException(email);
@@ -186,7 +187,7 @@ public class ConfirmUserServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(AuthCodes.USER_ALREADY_CONFIRMED.name(), exception.getCode());
 
-        Mockito.verify(exceptionHandlerService).handleUserAlreadyConfirmedException(email);
+        verify(exceptionHandlerService).handleUserAlreadyConfirmedException(email);
     }
 
     @Test
@@ -204,11 +205,11 @@ public class ConfirmUserServiceTest {
         AuthUser adminUser = new AuthUser();
         adminUser.setEmail("admin@example.com");
 
-        Mockito.when(authUserRepository.findAdminUser()).thenReturn(List.of(adminUser));
+        when(authUserRepository.findAdminUser()).thenReturn(List.of(adminUser));
 
         confirmUserService.sendConfirmationEmail(authUser);
-        Mockito.verify(emailSender).sendEmail(adminUser.getEmail(), null, Locale.ENGLISH, "admin.approval");
-        Mockito.verify(emailSender).sendEmailWithoutConfirmationLink(Mockito.eq(authUser.getEmail()), Mockito.any(), Mockito.eq("instructor.registration"));
+        verify(emailSender).sendEmail(adminUser.getEmail(), null, Locale.ENGLISH, "admin.approval");
+        verify(emailSender).sendEmailWithoutConfirmationLink(eq(authUser.getEmail()), any(), eq("instructor.registration"));
     }
 
     @Test
@@ -225,7 +226,7 @@ public class ConfirmUserServiceTest {
 
         confirmUserService.sendConfirmationEmail(authUser);
 
-        Mockito.verify(emailSender).sendEmail(authUser.getEmail(), null, Locale.ENGLISH, "client.registration");
+        verify(emailSender).sendEmail(authUser.getEmail(), null, Locale.ENGLISH, "client.registration");
     }
 
     @Test
@@ -239,10 +240,10 @@ public class ConfirmUserServiceTest {
         AppUser appUser = new AppUser();
         appUser.setAuthUser(authUser);
 
-        Mockito.doNothing().when(emailSender).sendEmailWithoutConfirmationLink(Mockito.anyString(), Mockito.any(), Mockito.eq("account.confirmed"));
+        doNothing().when(emailSender).sendEmailWithoutConfirmationLink(anyString(), any(), eq("account.confirmed"));
 
         confirmUserService.sendConfirmationSuccessEmail(authUser);
 
-        Mockito.verify(emailSender, Mockito.times(1)).sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "account.confirmed");
+        verify(emailSender, times(1)).sendEmailWithoutConfirmationLink(authUser.getEmail(), Locale.ENGLISH, "account.confirmed");
     }
 }
