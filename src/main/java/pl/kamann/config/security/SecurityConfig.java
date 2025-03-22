@@ -38,10 +38,10 @@ public class SecurityConfig {
             "/api/v1/auth/confirm",
             "/api/v1/auth/request-password-reset",
             "/api/v1/auth/reset-password",
+            "/api/v1/auth/refresh-token",
             "/api/v1/auth/register-client",
             "/api/v1/auth/register-instructor",
             "/api/v1/auth/login",
-            "/api/v1/auth/refresh-token",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"
@@ -53,11 +53,11 @@ public class SecurityConfig {
     };
 
     private static final String[] CLIENT_URLS = {
-            "/api/client/**",
-            "/api/client/events/**",
-            "/api/client/attendance/**",
-            "/api/client/occurrences/**",
-            "/api/client/membership-cards/**"
+            "/api/v1/client/**",
+            "/api/v1/client/events/**",
+            "/api/v1/client/attendance/**",
+            "/api/v1/client/occurrences/**",
+            "/api/v1/client/membership-cards/**"
     };
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -66,12 +66,12 @@ public class SecurityConfig {
 
     @Bean
     @Profile(value = "prod")
-    public SecurityFilterChain securityFilterChainProd(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSourceProd()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(ADMIN_URLS).hasRole("ADMIN")
                         .requestMatchers(CLIENT_URLS).hasAnyRole("CLIENT")
@@ -92,30 +92,39 @@ public class SecurityConfig {
 
     @Bean
     @Profile(value = "dev")
-    public SecurityFilterChain securityFilterChainDev(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChainLocal(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSourceDev()))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        .requestMatchers(PUBLIC_URLS).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
                 )
                 .build();
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    @Profile("dev")
+    public CorsConfigurationSource corsConfigurationSourceDev() {
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // CORS settings for dev profile
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:8080",
-                "https://kamann-production.up.railway.app"
+                "*"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -123,7 +132,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OpenAPI customOpenAPI() {
+    @Profile("prod")
+    public CorsConfigurationSource corsConfigurationSourceProd() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(
+                "https://kamann-production.up.railway.app"
+        ));
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
+    @Profile("dev")
+    public OpenAPI customOpenAPIDev() {
         return new OpenAPI()
                 .components(new Components()
                         .addSecuritySchemes("bearer-jwt",
@@ -135,9 +162,34 @@ public class SecurityConfig {
                         ))
                 .info(new Info()
                         .title("Dance dance")
-                        .version("1.0")
+                        .version("1.0.0")
                         .description("API Documentation"))
-                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"));
+                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
+                .servers(List.of(
+                        new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080").description("API Server (Dev)")
+                ));
+    }
+
+    @Bean
+    @Profile("prod")
+    public OpenAPI customOpenAPIProd() {
+        return new OpenAPI()
+                .components(new Components()
+                        .addSecuritySchemes("bearer-jwt",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .description("Enter JWT token")
+                        ))
+                .info(new Info()
+                        .title("Dance dance")
+                        .version("1.0.0")
+                        .description("API Documentation"))
+                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
+                .servers(List.of(
+                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app").description("API Server (Prod)")
+                ));
     }
 
     @Bean
