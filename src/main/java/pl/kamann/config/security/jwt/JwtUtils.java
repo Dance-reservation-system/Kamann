@@ -1,6 +1,9 @@
 package pl.kamann.config.security.jwt;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,7 +12,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
-import pl.kamann.entities.appuser.Role;
 import pl.kamann.entities.appuser.TokenType;
 
 import javax.crypto.SecretKey;
@@ -38,20 +40,11 @@ public class JwtUtils {
         log.info("JWT Secret Key successfully initialized.");
     }
 
-    public String generateToken(String email, Set<Role> roles) {
-        Map<String, Object> claims = createClaims("roles", roles.stream().map(Role::getName).toList());
-        return generateTokenWithClaims(email, claims, expiration);
-    }
-
-    public String generateTokenWithFlag(String email, TokenType flag, long expirationTime) {
-        return generateTokenWithClaims(email, Map.of("TokenType", flag.toString()), expirationTime);
-    }
-
     public Map<String, Object> createClaims(String key, Object value) {
         return Collections.singletonMap(key, value);
     }
 
-    public String generateTokenWithClaims(String email, Map<String, Object> claims, long expiration) {
+    public String generateToken(String email, Map<String, Object> claims) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(email)

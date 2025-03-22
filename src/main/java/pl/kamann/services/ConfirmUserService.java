@@ -46,9 +46,9 @@ public class ConfirmUserService {
         String confirmationLink = tokenService.generateLink(token, tokenService.getConfirmationLink());
         validationService.validateAuthUser(authUser);
 
-        if(authUser.getRoles().stream().anyMatch(role -> role.getName().equals("INSTRUCTOR"))) {
+        if (authUser.getRoles().stream().anyMatch(role -> role.getName().equals("INSTRUCTOR"))) {
             List<AuthUser> adminUsers = authUserRepository.findAdminUser();
-            for (AuthUser adminUser: adminUsers){
+            for (AuthUser adminUser : adminUsers) {
                 validationService.validateAuthUser(adminUser);
                 emailSender.sendEmail(adminUser.getEmail(), confirmationLink, Locale.ENGLISH, "admin.approval");
             }
@@ -63,7 +63,7 @@ public class ConfirmUserService {
     }
 
     private void handleEmailSending(AuthUser authUser) {
-        String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION, 15 * 60 * 1000);
+        String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION);
         sendConfirmationEmail(authUser, token);
         scheduleUserDeletion(authUser.getEmail());
     }

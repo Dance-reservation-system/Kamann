@@ -62,7 +62,7 @@ public class PasswordResetService {
     }
 
     private void sendResetPasswordEmail(AuthUser authUser) {
-        String token = tokenService.generateToken(authUser.getEmail(), TokenType.RESET_PASSWORD, 15 * 60 * 1000);
+        String token = tokenService.generateToken(authUser.getEmail(), TokenType.RESET_PASSWORD);
         String resetLink = tokenService.generateLink(token, tokenService.getResetPasswordLink());
 
         log.info("Sending reset password email to: {}", authUser.getEmail());
@@ -76,7 +76,7 @@ public class PasswordResetService {
 
         log.info("Reset password attempt for token: {}", token);
 
-        if(jwtUtils.validateToken(token, TokenType.RESET_PASSWORD)) {
+        if (jwtUtils.validateToken(token, TokenType.RESET_PASSWORD)) {
             String email = jwtUtils.extractEmail(token);
 
             AuthUser authUser = authUserRepository.findByEmail(email).orElseThrow(() ->

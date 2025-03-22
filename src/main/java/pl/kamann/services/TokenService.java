@@ -22,7 +22,8 @@ public class TokenService {
     public String generateLink(String baseUrl, String token) {
         return baseUrl + token;
     }
-    public String generateToken(String email, TokenType tokenType, long expirationTime) {
-        return jwtUtils.generateTokenWithFlag(email, tokenType, expirationTime);
+
+    public String generateToken(String email, TokenType tokenType) {
+        return jwtUtils.generateToken(email, jwtUtils.createClaims("TokenType", tokenType.toString()));
     }
 }

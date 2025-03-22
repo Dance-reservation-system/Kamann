@@ -35,6 +35,7 @@ import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.RefreshTokenService;
 import pl.kamann.services.factory.UserFactory;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -110,8 +111,10 @@ class AuthServiceTest {
         String generatedAccessToken = "accessToken";
         String generatedRefreshToken = "refreshToken";
 
+        Map<String, Object> claims = jwtUtils.createClaims("roles", user.getRoles().stream().map(Role::getName).toList());
+
         when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
-        when(jwtUtils.generateToken(loginRequest.email(), user.getRoles())).thenReturn(generatedAccessToken);
+        when(jwtUtils.generateToken(loginRequest.email(), claims)).thenReturn(generatedAccessToken);
         when(refreshTokenService.generateRefreshToken(user)).thenReturn(generatedRefreshToken);
 
         LoginResponse response = authService.login(loginRequest, httpServletResponse);
@@ -130,7 +133,7 @@ class AuthServiceTest {
         assertTrue(refreshTokenCookie.isHttpOnly());
 
         verify(authenticationManager).authenticate(any(Authentication.class));
-        verify(jwtUtils).generateToken(loginRequest.email(), user.getRoles());
+        verify(jwtUtils).generateToken(loginRequest.email(), claims);
         verify(refreshTokenService).generateRefreshToken(user);
         verify(httpServletResponse).addCookie(any());
     }
@@ -196,8 +199,10 @@ class AuthServiceTest {
         refreshToken.setToken(oldRefreshToken);
         refreshToken.setAuthUser(user);
 
+        Map<String, Object> claims = jwtUtils.createClaims("roles", user.getRoles());
+
         when(refreshTokenService.getRefreshToken(oldRefreshToken)).thenReturn(Optional.of(refreshToken));
-        when(jwtUtils.generateToken(eq(user.getEmail()), any())).thenReturn(newAccessToken);
+        when(jwtUtils.generateToken(eq(user.getEmail()), eq(claims))).thenReturn(newAccessToken);
         when(refreshTokenService.generateRefreshToken(user)).thenReturn(newRefreshToken);
 
         LoginResponse response = authService.refreshToken(oldRefreshToken, httpServletResponse);
