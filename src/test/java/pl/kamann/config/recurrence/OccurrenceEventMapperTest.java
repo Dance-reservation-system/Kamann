@@ -70,7 +70,7 @@ class OccurrenceEventMapperTest {
                 .createdBy(creator)
                 .seriesIndex(0)
                 .maxParticipants(15)
-                .attendances(Collections.emptyList())
+                .attendances(Collections.emptySet())
                 .build();
 
         OccurrenceEventDto dto = occurrenceEventMapper.toOccurrenceEventDto(occ);
