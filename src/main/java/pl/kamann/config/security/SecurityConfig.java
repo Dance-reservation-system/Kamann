@@ -118,7 +118,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSourceDev() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // CORS settings for dev profile
         configuration.setAllowedOrigins(List.of(
                 "*"
         ));
@@ -137,7 +136,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-                "http://kamann-production.up.railway.app"
+                "https://kamann-production.up.railway.app"
         ));
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
@@ -188,7 +187,7 @@ public class SecurityConfig {
                         .description("API Documentation"))
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
                 .servers(List.of(
-                        new io.swagger.v3.oas.models.servers.Server().url("http://kamann-production.up.railway.app").description("API Server (Prod)")
+                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app").description("API Server (Prod)")
                 ));
     }
 
