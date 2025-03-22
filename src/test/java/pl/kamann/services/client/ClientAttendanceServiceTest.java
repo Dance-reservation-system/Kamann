@@ -11,6 +11,7 @@ import pl.kamann.config.exception.services.EventLookupService;
 import pl.kamann.config.exception.services.UserLookupService;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,7 +37,7 @@ public class ClientAttendanceServiceTest {
                 .start(LocalDateTime.now().plusHours(2))
                 .durationMinutes(60)
                 .maxParticipants(10)
-                .participants(new java.util.ArrayList<>())
+                .participants(new HashSet<>())
                 .build();
     }
 

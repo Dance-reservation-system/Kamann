@@ -9,8 +9,8 @@ import pl.kamann.entities.attendance.Attendance;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -62,7 +62,7 @@ public class OccurrenceEvent implements Serializable {
     private AppUser instructor;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "occurrenceEvent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Attendance> attendances = new ArrayList<>();
+    private Set<Attendance> attendances = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -70,7 +70,7 @@ public class OccurrenceEvent implements Serializable {
             joinColumns = @JoinColumn(name = "occurrence_event_id"),
             inverseJoinColumns = @JoinColumn(name = "app_user_id")
     )
-    private List<AppUser> participants = new ArrayList<>();
+    private Set<AppUser> participants = new HashSet<>();
 
     public LocalDateTime getEnd() {
         return start.plusMinutes(durationMinutes);
