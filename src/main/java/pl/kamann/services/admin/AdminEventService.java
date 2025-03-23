@@ -15,6 +15,7 @@ import pl.kamann.dtos.event.*;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
+import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.services.EventTypeService;
@@ -26,6 +27,7 @@ import pl.kamann.config.exception.services.EventLookupService;
 import pl.kamann.config.exception.services.UserLookupService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +38,8 @@ public class AdminEventService {
     private final EventTypeService eventTypeService;
     private final EventValidationService eventValidationService;
 
-    private final AdminEventHelperService adminEventHelperService;
+    private final AdminOccurrenceEventService adminOccurrenceEventService;
+    private final OccurrenceEventGeneratorService occurrenceEventGeneratorService;
 
     private final NotificationService notificationService;
     private final PaginationService paginationService;
@@ -44,7 +47,6 @@ public class AdminEventService {
 
     private final EventLookupService eventLookupService;
     private final UserLookupService userLookupService;
-
 
     @Transactional
     public CreateEventResponse createEvent(CreateEventRequest request) {
@@ -57,7 +59,8 @@ public class AdminEventService {
         event.setEventType(eventType);
         event = eventRepository.save(event);
 
-        adminEventHelperService.createOccurrenceEvents(event);
+        List<OccurrenceEvent> occurrenceEvents = occurrenceEventGeneratorService.generateOccurrences(event);
+        occurrenceEvents.forEach(adminOccurrenceEventService::saveOccurrenceEvent);
 
         return eventMapper.toCreateEventResponse(event);
     }
@@ -77,7 +80,7 @@ public class AdminEventService {
 
         eventValidationService.validateUpdate(requestDto, event);
 
-        adminEventHelperService.updateEventFields(event, requestDto);
+        adminOccurrenceEventService.updateEventFields(event, requestDto);
         eventRepository.save(event);
 
         return eventMapper.toEventUpdateResponse(event);
@@ -86,13 +89,13 @@ public class AdminEventService {
     @Transactional
     public void deleteEvent(Long id, boolean force) {
         Event event = eventLookupService.findEventById(id);
-        boolean hasOccurrenceEvents = adminEventHelperService.hasOccurrenceEvents(event);
+        boolean hasOccurrenceEvents = adminOccurrenceEventService.hasOccurrenceEvents(event);
 
         if (!force && hasOccurrenceEvents) {
             throw new ApiException("Cannot delete event with occurrences unless forced",
                     HttpStatus.BAD_REQUEST, EventCodes.EVENT_HAS_OCCURRENCES.name());
         }
-        adminEventHelperService.deleteOccurrenceEvent(event);
+        adminOccurrenceEventService.deleteOccurrenceEvent(event);
         eventRepository.delete(event);
     }
 
@@ -111,7 +114,7 @@ public class AdminEventService {
         event.setUpdatedAt(LocalDateTime.now());
 
         eventRepository.save(event);
-        adminEventHelperService.cancelOccurrenceEventsAfter(event, now);
+        adminOccurrenceEventService.cancelOccurrenceEventsAfter(event, now);
         notificationService.notifyParticipants(event);
     }
 

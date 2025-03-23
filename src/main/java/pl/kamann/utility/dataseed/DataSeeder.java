@@ -18,9 +18,8 @@ import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.*;
-import pl.kamann.services.admin.AdminEventHelperService;
-import pl.kamann.services.admin.AdminEventService;
 import pl.kamann.services.admin.AdminOccurrenceEventService;
+import pl.kamann.services.admin.OccurrenceEventGeneratorService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -41,7 +40,7 @@ public class DataSeeder {
     private final EventRepository eventRepository;
     private final PasswordEncoder passwordEncoder;
     private final AdminOccurrenceEventService adminOccurrenceEventService;
-    private final AdminEventHelperService adminEventHelperService;
+    private final OccurrenceEventGeneratorService occurrenceEventGeneratorService;
     private final OccurrenceEventRepository occurrenceEventRepository;
     private final AttendanceRepository attendanceRepository;
     private final UserLookupService userLookupService;
@@ -162,7 +161,7 @@ public class DataSeeder {
 
     private void createEventWithOccurrences(EventData eventData, AppUser admin, AppUser instructor) {
         Event event = createEvent(eventData, admin, instructor);
-        adminEventHelperService.createOccurrenceEvents(event);
+        occurrenceEventGeneratorService.generateOccurrences(event);
     }
 
     private Event createEvent(EventData eventData, AppUser admin, AppUser instructor) {

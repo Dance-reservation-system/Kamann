@@ -6,10 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.exception.services.UserLookupService;
 import pl.kamann.dtos.event.EventUpdateRequest;
 import pl.kamann.dtos.event.EventUpdateResponse;
 import pl.kamann.dtos.event.OccurrenceEventRangeUpdateRequest;
 import pl.kamann.dtos.event.OccurrenceEventUpdateResponse;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.OccurrenceEventRepository;
@@ -21,10 +24,15 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AdminOccurrenceEventService {
+
+    private final EventValidationService eventValidationService;
     private final OccurrenceEventRepository occurrenceEventRepository;
     private final EventMapper eventMapper;
-    private final EventValidationService eventValidationService;
-    private final AdminEventHelperService adminEventHelperService;
+    private final UserLookupService userLookupService;
+
+    public void saveOccurrenceEvent(OccurrenceEvent occurrenceEvent) {
+        occurrenceEventRepository.save(occurrenceEvent);
+    }
 
     @Transactional
     public OccurrenceEventUpdateResponse updateOccurrenceEventByOccurrenceEventId(Long id, EventUpdateRequest requestDto) {
@@ -33,22 +41,17 @@ public class AdminOccurrenceEventService {
 
         eventValidationService.validateUpdate(requestDto, occurrenceEvent.getEvent());
 
-        adminEventHelperService.updateEventFields(occurrenceEvent.getEvent(), requestDto);
+        updateEventFields(occurrenceEvent.getEvent(), requestDto);
         occurrenceEventRepository.save(occurrenceEvent);
         EventUpdateResponse eventUpdateResponse = eventMapper.toEventUpdateResponse(occurrenceEvent.getEvent());
         return new OccurrenceEventUpdateResponse(1, List.of(eventUpdateResponse));
     }
-
     @Transactional
     public OccurrenceEventUpdateResponse updateFutureOccurrenceEvents(Long id, EventUpdateRequest requestDto) {
         List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findAllByEvent_IdAndStartAfter(id, LocalDateTime.now());
         validateAndUpdateOccurrenceEvents(futureOccurrences, requestDto);
 
-        List<OccurrenceEvent> savedOccurrenceEvents = occurrenceEventRepository.saveAll(futureOccurrences);
-        List<EventUpdateResponse> eventUpdateResponses = savedOccurrenceEvents.stream()
-                .map(occurrenceEvent -> eventMapper.toEventUpdateResponse(occurrenceEvent.getEvent()))
-                .toList();
-
+        List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(futureOccurrences);
         return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
     }
 
@@ -57,24 +60,45 @@ public class AdminOccurrenceEventService {
         List<OccurrenceEvent> allByEventId = occurrenceEventRepository.findAllByEvent_Id(id);
         validateAndUpdateOccurrenceEvents(allByEventId, requestDto);
 
-        List<OccurrenceEvent> savedOccurrenceEvents = occurrenceEventRepository.saveAll(allByEventId);
-        List<EventUpdateResponse> eventUpdateResponses = savedOccurrenceEvents.stream()
-                .map(occurrenceEvent -> eventMapper.toEventUpdateResponse(occurrenceEvent.getEvent()))
-                .toList();
-
+        List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(allByEventId);
         return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
     }
 
     @Transactional
     public OccurrenceEventUpdateResponse updateRangeOccurrenceEvents(Long id, OccurrenceEventRangeUpdateRequest requestDto) {
-        List<OccurrenceEvent> allByEventIdAndWithinDateRange = occurrenceEventRepository.findAllByStartBetween(requestDto.startAfter(), requestDto.endBefore());
-        validateAndUpdateOccurrenceEvents(allByEventIdAndWithinDateRange, requestDto.eventUpdateRequestDto());
+        List<OccurrenceEvent> allByEventIdAndStartBetween = occurrenceEventRepository.findAllByEvent_IdAndStartBetween(id,
+                requestDto.startAfter(), requestDto.endBefore());
+        validateAndUpdateOccurrenceEvents(allByEventIdAndStartBetween, requestDto.eventUpdateRequestDto());
 
-        List<OccurrenceEvent> savedOccurrenceEvents = occurrenceEventRepository.saveAll(allByEventIdAndWithinDateRange);
-        List<EventUpdateResponse> eventUpdateResponses = savedOccurrenceEvents.stream()
-                .map(occurrenceEvent -> eventMapper.toEventUpdateResponse(occurrenceEvent.getEvent()))
-                .toList();
+        List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(allByEventIdAndStartBetween);
         return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
+    }
+
+    @Transactional
+    public void cancelOccurrenceEventsAfter(Event event, LocalDateTime date) {
+        List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findByEventAndStartAfter(event, date);
+        futureOccurrences.forEach(occ -> {
+            occ.setCanceled(true);
+            occ.setEventStatus(EventStatus.CANCELED);
+        });
+    }
+
+    public void deleteOccurrenceEvent(Event event) {
+        occurrenceEventRepository.deleteByEvent(event);
+    }
+
+    public boolean hasOccurrenceEvents(Event event) {
+        return occurrenceEventRepository.existsByEvent(event);
+    }
+
+    void updateEventFields(Event event, EventUpdateRequest requestDto) {
+        event.setTitle(requestDto.title());
+        event.setDescription(requestDto.description());
+        event.setStart(requestDto.start());
+        event.setDurationMinutes(requestDto.durationMinutes());
+        event.setRrule(requestDto.rrule());
+        event.setMaxParticipants(requestDto.maxParticipants());
+        event.setInstructor(requestDto.instructorId() != null ? userLookupService.findUserById(requestDto.instructorId()) : null);
     }
 
     private void validateAndUpdateOccurrenceEvents(List<OccurrenceEvent> occurrenceEvents, EventUpdateRequest requestDto) {
@@ -82,7 +106,14 @@ public class AdminOccurrenceEventService {
                 .map(OccurrenceEvent::getEvent)
                 .forEach(event -> {
                     eventValidationService.validateUpdate(requestDto, event);
-                    adminEventHelperService.updateEventFields(event, requestDto);
+                    updateEventFields(event, requestDto);
                 });
+    }
+
+    private List<EventUpdateResponse> persistAndMapOccurrenceEvents(List<OccurrenceEvent> occurrenceEvents) {
+        List<OccurrenceEvent> savedOccurrenceEvents = occurrenceEventRepository.saveAll(occurrenceEvents);
+        return savedOccurrenceEvents.stream()
+                .map(occurrenceEvent -> eventMapper.toEventUpdateResponse(occurrenceEvent.getEvent()))
+                .toList();
     }
 }
