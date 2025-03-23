@@ -1,0 +1,41 @@
+name: Deployment Status Badge
+
+on:
+  push:
+    branches:
+      - test-release
+      - develop
+  workflow_dispatch:
+
+jobs:
+  update-deployment-status:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get Deployment Status from Railway
+        id: railway-status
+        run: |
+          RAILWAY_API_KEY="${{ secrets.RAILWAY_API_KEY }}"
+          RAILWAY_PROJECT_ID="${{ secrets.RAILWAY_PROJECT_ID }}"
+
+          STATUS=$(curl -s "https://railway.app/api/v1/projects/$RAILWAY_PROJECT_ID/deployments" \
+            -H "Authorization: Bearer $RAILWAY_API_KEY" | jq -r '.[0].status')
+
+          echo "Deployment Status: $STATUS"
+          echo "STATUS=$STATUS" >> $GITHUB_ENV
+
+      - name: Update Status Badge
+        uses: emibcn/badge-action@v2
+        with:
+          label: "DEPLOYMENT"
+          status: "${{ env.STATUS }}"
+          color: "green"
+          path: "badges/deployment-status.svg"
+
+      - name: Commit and Push Badge
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'actions@github.com'
+          git add badges/deployment-status.svg
+          git commit -m "Update deployment status badge" || echo "No changes to commit"
+          git push
