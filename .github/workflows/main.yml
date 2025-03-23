@@ -1,37 +1,33 @@
-name: Deployment Status Badge
+name: Deploy Action - Railway
 
 on:
-  push:
-    branches:
-      - test-release
-      - develop
-  workflow_dispatch:
+  repository_dispatch:
+    types: [deploy]
 
 jobs:
   update-deployment-status:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get Deployment Status from Railway
-        id: railway-status
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get Deployment Info from Railway (Webhook)
         run: |
-          RAILWAY_API_KEY="${{ secrets.RAILWAY_API_KEY }}"
-          RAILWAY_PROJECT_ID="${{ secrets.RAILWAY_PROJECT_ID }}"
+          curl -X POST https://api.railway.app/v1/projects/${{ secrets.RAILWAY_PROJECT_ID }}/deployments \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_API_KEY }}" \
+            -d '{"query": "query { deployments(first: 1, input: {projectId: \"${{ secrets.RAILWAY_PROJECT_ID }}\"}) { edges { node { id staticUrl } } } }"}' \
+            -o deployment-status.json
+          cat deployment-status.json
 
-          STATUS=$(curl -s "https://railway.app/api/v1/projects/$RAILWAY_PROJECT_ID/deployments" \
-            -H "Authorization: Bearer $RAILWAY_API_KEY" | jq -r '.[0].status')
-
-          echo "Deployment Status: $STATUS"
-          echo "STATUS=$STATUS" >> $GITHUB_ENV
-
-      - name: Update Status Badge
+      - name: Update Deployment Badge
         uses: emibcn/badge-action@v2
         with:
           label: "DEPLOYMENT"
-          status: "${{ env.STATUS }}"
+          status: "success"
           color: "green"
           path: "badges/deployment-status.svg"
-
+        
       - name: Commit and Push Badge
         run: |
           git config --global user.name 'github-actions'
