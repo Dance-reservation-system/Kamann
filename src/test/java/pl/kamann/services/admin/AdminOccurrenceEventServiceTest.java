@@ -160,9 +160,7 @@ class AdminOccurrenceEventServiceTest {
         when(eventRepository.findById(eq(eventId))).thenReturn(Optional.empty());
 
         //when & then
-        assertThrows(EventNotFoundException.class, () -> {
-            adminOccurrenceEventService.updateFutureOccurrenceEvents(eventId, eventUpdateRequest);
-        });
+        assertThrows(EventNotFoundException.class, () -> adminOccurrenceEventService.updateFutureOccurrenceEvents(eventId, eventUpdateRequest));
     }
 
     @Test
