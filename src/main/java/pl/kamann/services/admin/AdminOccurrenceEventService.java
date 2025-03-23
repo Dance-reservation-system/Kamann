@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.exception.services.UserLookupService;
+import pl.kamann.config.exception.specific.EventNotFoundException;
 import pl.kamann.dtos.event.EventUpdateRequest;
 import pl.kamann.dtos.event.EventUpdateResponse;
 import pl.kamann.dtos.event.OccurrenceEventRangeUpdateRequest;
@@ -15,6 +16,7 @@ import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
+import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
 import pl.kamann.services.EventValidationService;
 
@@ -27,6 +29,7 @@ public class AdminOccurrenceEventService {
 
     private final EventValidationService eventValidationService;
     private final OccurrenceEventRepository occurrenceEventRepository;
+    private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final UserLookupService userLookupService;
 
@@ -35,9 +38,9 @@ public class AdminOccurrenceEventService {
     }
 
     @Transactional
-    public OccurrenceEventUpdateResponse updateOccurrenceEventByOccurrenceEventId(Long id, EventUpdateRequest requestDto) {
-        OccurrenceEvent occurrenceEvent = occurrenceEventRepository.findById(id)
-                .orElseThrow(() -> new ApiException("Occurrence not found with ID: " + id, HttpStatus.BAD_REQUEST, EventCodes.OCCURRENCE_NOT_FOUND.name()));
+    public OccurrenceEventUpdateResponse updateOccurrenceEventByOccurrenceEventId(Long occurrenceEventId, EventUpdateRequest requestDto) {
+        OccurrenceEvent occurrenceEvent = occurrenceEventRepository.findById(occurrenceEventId)
+                .orElseThrow(() -> new ApiException("Occurrence not found with ID: " + occurrenceEventId, HttpStatus.BAD_REQUEST, EventCodes.OCCURRENCE_NOT_FOUND.name()));
 
         eventValidationService.validateUpdate(requestDto, occurrenceEvent.getEvent());
 
@@ -47,31 +50,43 @@ public class AdminOccurrenceEventService {
         return new OccurrenceEventUpdateResponse(1, List.of(eventUpdateResponse));
     }
     @Transactional
-    public OccurrenceEventUpdateResponse updateFutureOccurrenceEvents(Long id, EventUpdateRequest requestDto) {
-        List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findAllByEvent_IdAndStartAfter(id, LocalDateTime.now());
-        validateAndUpdateOccurrenceEvents(futureOccurrences, requestDto);
+    public OccurrenceEventUpdateResponse updateFutureOccurrenceEvents(Long eventId, EventUpdateRequest requestDto) {
+        if (eventExists(eventId)) {
+            List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findAllByEvent_IdAndStartAfter(eventId, LocalDateTime.now());
+            validateAndUpdateOccurrenceEvents(futureOccurrences, requestDto);
 
-        List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(futureOccurrences);
-        return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
+            List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(futureOccurrences);
+            return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
+        } else {
+            throw new EventNotFoundException();
+        }
     }
 
     @Transactional
-    public OccurrenceEventUpdateResponse updateAllOccurrenceEvents(Long id, EventUpdateRequest requestDto) {
-        List<OccurrenceEvent> allByEventId = occurrenceEventRepository.findAllByEvent_Id(id);
-        validateAndUpdateOccurrenceEvents(allByEventId, requestDto);
+    public OccurrenceEventUpdateResponse updateAllOccurrenceEvents(Long eventId, EventUpdateRequest requestDto) {
+        if (eventExists(eventId)) {
+            List<OccurrenceEvent> allByEventId = occurrenceEventRepository.findAllByEvent_Id(eventId);
+            validateAndUpdateOccurrenceEvents(allByEventId, requestDto);
 
-        List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(allByEventId);
-        return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
+            List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(allByEventId);
+            return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
+        } else {
+            throw new EventNotFoundException();
+        }
     }
 
     @Transactional
-    public OccurrenceEventUpdateResponse updateRangeOccurrenceEvents(Long id, OccurrenceEventRangeUpdateRequest requestDto) {
-        List<OccurrenceEvent> allByEventIdAndStartBetween = occurrenceEventRepository.findAllByEvent_IdAndStartBetween(id,
-                requestDto.startAfter(), requestDto.endBefore());
-        validateAndUpdateOccurrenceEvents(allByEventIdAndStartBetween, requestDto.eventUpdateRequestDto());
+    public OccurrenceEventUpdateResponse updateRangeOccurrenceEvents(Long eventId, OccurrenceEventRangeUpdateRequest requestDto) {
+        if(eventExists(eventId)) {
+            List<OccurrenceEvent> allByEventIdAndStartBetween = occurrenceEventRepository.findAllByEvent_IdAndStartBetween(eventId,
+                    requestDto.startAfter(), requestDto.endBefore());
+            validateAndUpdateOccurrenceEvents(allByEventIdAndStartBetween, requestDto.eventUpdateRequestDto());
 
-        List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(allByEventIdAndStartBetween);
-        return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
+            List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(allByEventIdAndStartBetween);
+            return new OccurrenceEventUpdateResponse(eventUpdateResponses.size(), eventUpdateResponses);
+        } else {
+            throw new EventNotFoundException();
+        }
     }
 
     @Transactional
@@ -115,5 +130,9 @@ public class AdminOccurrenceEventService {
         return savedOccurrenceEvents.stream()
                 .map(occurrenceEvent -> eventMapper.toEventUpdateResponse(occurrenceEvent.getEvent()))
                 .toList();
+    }
+
+    private boolean eventExists(Long eventId) {
+        return eventRepository.findById(eventId).isPresent();
     }
 }
