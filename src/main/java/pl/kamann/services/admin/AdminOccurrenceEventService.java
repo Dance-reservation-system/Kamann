@@ -78,8 +78,10 @@ public class AdminOccurrenceEventService {
     @Transactional
     public OccurrenceEventUpdateResponse updateRangeOccurrenceEvents(Long eventId, OccurrenceEventRangeUpdateRequest requestDto) {
         if(eventExists(eventId)) {
-            List<OccurrenceEvent> allByEventIdAndStartBetween = occurrenceEventRepository.findAllByEvent_IdAndStartBetween(eventId,
-                    requestDto.startAfter(), requestDto.endBefore());
+            List<OccurrenceEvent> allByEventIdAndStartBetween = occurrenceEventRepository.findAllByEvent_IdAndStartAfterAndStartBefore(
+                    eventId,
+                    requestDto.startAfter(),
+                    requestDto.endBefore());
             validateAndUpdateOccurrenceEvents(allByEventIdAndStartBetween, requestDto.eventUpdateRequestDto());
 
             List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(allByEventIdAndStartBetween);
