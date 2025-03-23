@@ -45,9 +45,6 @@ class AdminOccurrenceEventServiceTest {
     @Mock
     EventRepository eventRepository;
 
-    @Mock
-    UserLookupService userLookupService;
-
     @InjectMocks
     AdminOccurrenceEventService adminOccurrenceEventService;
 
@@ -154,6 +151,7 @@ class AdminOccurrenceEventServiceTest {
         when(occurrenceEventRepository.saveAll(futureOccurrences)).thenReturn(futureOccurrences);
         doNothing().when(eventValidationService).validateUpdate(eq(request), any(Event.class));
         when(eventMapper.toEventUpdateResponse(any(Event.class))).thenReturn(eventUpdateResponse);
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
         // when
         OccurrenceEventUpdateResponse response = adminOccurrenceEventService.updateFutureOccurrenceEvents(eventId, request);
