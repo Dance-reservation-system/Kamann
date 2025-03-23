@@ -37,5 +37,5 @@ public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent
 
     List<OccurrenceEvent> findAllByEvent_Id(Long eventId);
 
-    List<OccurrenceEvent> findAllByEvent_IdAndStartBetween(Long eventId, LocalDateTime startAfter, LocalDateTime startBefore);
+    List<OccurrenceEvent> findAllByEvent_IdAndStartAfterAndStartBefore(Long eventId, LocalDateTime startAfter, LocalDateTime startBefore);
 }
