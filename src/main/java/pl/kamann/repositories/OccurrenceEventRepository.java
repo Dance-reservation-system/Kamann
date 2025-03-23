@@ -31,19 +31,11 @@ public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent
                OR (:scope = 'AVAILABLE' AND o.start >= CURRENT_TIMESTAMP AND :user NOT MEMBER OF o.participants)
                OR (:scope = 'PAST' AND o.start < CURRENT_TIMESTAMP)
             """)
-    Page<OccurrenceEvent> findFilteredOccurrences(
-            @Param("scope") String scope,
-            @Param("user") AppUser user,
-            Pageable pageable
-    );
+    Page<OccurrenceEvent> findFilteredOccurrences(@Param("scope") String scope, @Param("user") AppUser user, Pageable pageable);
 
     List<OccurrenceEvent> findAllByEvent_IdAndStartAfter(Long eventId, LocalDateTime startAfter);
 
     List<OccurrenceEvent> findAllByEvent_Id(Long eventId);
-
-    List<OccurrenceEvent> findAllByStartBetween(LocalDateTime startAfter, LocalDateTime startBefore);
-
-    List<OccurrenceEvent> findAllByEvent(Event event);
 
     List<OccurrenceEvent> findAllByEvent_IdAndStartBetween(Long eventId, LocalDateTime startAfter, LocalDateTime startBefore);
 }
