@@ -7,7 +7,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.exception.services.UserLookupService;
 import pl.kamann.config.exception.specific.EventNotFoundException;
 import pl.kamann.dtos.event.EventUpdateRequest;
 import pl.kamann.dtos.event.EventUpdateResponse;
@@ -75,8 +74,7 @@ class AdminOccurrenceEventServiceTest {
         OccurrenceEvent occurrenceEvent = new OccurrenceEvent();
         occurrenceEvent.setId(occurrenceEventId);
         occurrenceEvent.setEvent(event);
-        EventUpdateRequest request = new EventUpdateRequest(
-                "New Title",  // title
+        EventUpdateRequest request = new EventUpdateRequest("New Title",  // title
                 null,         // description
                 null,         // start
                 null,         // durationMinutes
@@ -85,17 +83,14 @@ class AdminOccurrenceEventServiceTest {
                 0          // maxParticipants
         );
 
-        EventUpdateResponse eventUpdateResponse = new EventUpdateResponse(
-                occurrenceEvent.getEvent().getId(),
-                "New Title",
-                occurrenceEvent.getEvent().getDescription(),
-                occurrenceEvent.getEvent().getStart(),
-                occurrenceEvent.getEvent().getDurationMinutes(),
-                occurrenceEvent.getEvent().getStatus(),
-                occurrenceEvent.getEvent().getUpdatedAt(),
-                0L,
-                occurrenceEvent.getEvent().getMaxParticipants()
-        );
+        EventUpdateResponse eventUpdateResponse = new EventUpdateResponse(occurrenceEvent.getEvent()
+                .getId(), "New Title", occurrenceEvent.getEvent()
+                .getDescription(), occurrenceEvent.getEvent()
+                .getStart(), occurrenceEvent.getEvent()
+                .getDurationMinutes(), occurrenceEvent.getEvent()
+                .getStatus(), occurrenceEvent.getEvent()
+                .getUpdatedAt(), 0L, occurrenceEvent.getEvent()
+                .getMaxParticipants());
 
         when(occurrenceEventRepository.findById(occurrenceEventId)).thenReturn(Optional.of(occurrenceEvent));
         when(eventMapper.toEventUpdateResponse(any(Event.class))).thenReturn(eventUpdateResponse);
@@ -104,9 +99,12 @@ class AdminOccurrenceEventServiceTest {
         OccurrenceEventUpdateResponse occurrenceEventUpdateResponse = adminOccurrenceEventService.updateOccurrenceEventByOccurrenceEventId(occurrenceEventId, request);
 
         //then
-        assertThat(occurrenceEvent.getEvent().getTitle()).isEqualTo("New Title");
+        assertThat(occurrenceEvent.getEvent()
+                .getTitle()).isEqualTo("New Title");
         assertThat(occurrenceEventUpdateResponse.affectedOccurrenceEvents()).isEqualTo(1);
-        assertThat(occurrenceEventUpdateResponse.responses().getFirst().title()).isEqualTo("New Title");
+        assertThat(occurrenceEventUpdateResponse.responses()
+                .getFirst()
+                .title()).isEqualTo("New Title");
     }
 
 
@@ -120,12 +118,12 @@ class AdminOccurrenceEventServiceTest {
 
         OccurrenceEvent occurrenceEventInFuture = new OccurrenceEvent();
         occurrenceEventInFuture.setEvent(event);
-        occurrenceEventInFuture.setStart(LocalDateTime.now().plusDays(1));
+        occurrenceEventInFuture.setStart(LocalDateTime.now()
+                .plusDays(1));
 
         List<OccurrenceEvent> futureOccurrences = List.of(occurrenceEventInFuture);
 
-        EventUpdateRequest request = new EventUpdateRequest(
-                "New Title",  // title
+        EventUpdateRequest request = new EventUpdateRequest("New Title",  // title
                 null,         // description
                 null,         // start
                 null,         // durationMinutes
@@ -134,22 +132,12 @@ class AdminOccurrenceEventServiceTest {
                 0             // maxParticipants
         );
 
-        EventUpdateResponse eventUpdateResponse = new EventUpdateResponse(
-                eventId,
-                "New Title",
-                null,
-                null,
-                null,
-                null,
-                null,
-                0L,
-                0
-        );
+        EventUpdateResponse eventUpdateResponse = new EventUpdateResponse(eventId, "New Title", null, null, null, null, null, 0L, 0);
 
-        when(occurrenceEventRepository.findAllByEvent_IdAndStartAfter(eq(eventId), any(LocalDateTime.class)))
-                .thenReturn(futureOccurrences);
+        when(occurrenceEventRepository.findAllByEvent_IdAndStartAfter(eq(eventId), any(LocalDateTime.class))).thenReturn(futureOccurrences);
         when(occurrenceEventRepository.saveAll(futureOccurrences)).thenReturn(futureOccurrences);
-        doNothing().when(eventValidationService).validateUpdate(eq(request), any(Event.class));
+        doNothing().when(eventValidationService)
+                .validateUpdate(eq(request), any(Event.class));
         when(eventMapper.toEventUpdateResponse(any(Event.class))).thenReturn(eventUpdateResponse);
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
@@ -159,7 +147,9 @@ class AdminOccurrenceEventServiceTest {
         //then
         assertThat(response.affectedOccurrenceEvents()).isEqualTo(1);
         assertThat(response.responses()).hasSize(1);
-        assertThat(response.responses().getFirst().title()).isEqualTo("New Title");
+        assertThat(response.responses()
+                .getFirst()
+                .title()).isEqualTo("New Title");
     }
 
     @Test
