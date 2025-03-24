@@ -47,8 +47,10 @@ public record EventDto(
         @NotNull(message = "Event type ID cannot be null")
         Long eventTypeId,
 
+        @NotNull
         String eventTypeName,
 
+        @NotNull
         EventDifficulty eventDifficulty
 ) {
 }
