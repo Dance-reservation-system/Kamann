@@ -133,7 +133,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OpenAPI customOpenAPI() {
+    @Profile("dev")
+    public OpenAPI customOpenAPIDev() {
         return new OpenAPI()
                 .components(new Components()
                         .addSecuritySchemes("bearer-jwt",
@@ -145,9 +146,34 @@ public class SecurityConfig {
                         ))
                 .info(new Info()
                         .title("Dance dance")
-                        .version("1.0")
+                        .version("1.0.0")
                         .description("API Documentation"))
-                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"));
+                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
+                .servers(List.of(
+                        new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080").description("API Server (Dev)")
+                ));
+    }
+
+    @Bean
+    @Profile("prod")
+    public OpenAPI customOpenAPIProd() {
+        return new OpenAPI()
+                .components(new Components()
+                        .addSecuritySchemes("bearer-jwt",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .description("Enter JWT token")
+                        ))
+                .info(new Info()
+                        .title("Dance dance")
+                        .version("1.0.0")
+                        .description("API Documentation"))
+                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
+                .servers(List.of(
+                        new io.swagger.v3.oas.models.servers.Server().url("https://kamann-production.up.railway.app").description("API Server (Prod)")
+                ));
     }
 
     @Bean
