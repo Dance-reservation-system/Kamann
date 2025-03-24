@@ -1,13 +1,13 @@
 package pl.kamann.services.admin;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.exception.services.UserLookupService;
 import pl.kamann.config.exception.specific.EventNotFoundException;
+import pl.kamann.config.exception.specific.IllegalDateRangeException;
 import pl.kamann.dtos.event.EventUpdateRequest;
 import pl.kamann.dtos.event.EventUpdateResponse;
 import pl.kamann.dtos.event.OccurrenceEventRangeUpdateRequest;
@@ -22,6 +22,9 @@ import pl.kamann.services.EventValidationService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static pl.kamann.config.codes.EventCodes.INVALID_DATE_RANGE;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +43,7 @@ public class AdminOccurrenceEventService {
     @Transactional
     public OccurrenceEventUpdateResponse updateOccurrenceEventByOccurrenceEventId(Long occurrenceEventId, EventUpdateRequest requestDto) {
         OccurrenceEvent occurrenceEvent = occurrenceEventRepository.findById(occurrenceEventId)
-                .orElseThrow(() -> new ApiException("Occurrence not found with ID: " + occurrenceEventId, HttpStatus.BAD_REQUEST, EventCodes.OCCURRENCE_NOT_FOUND.name()));
+                .orElseThrow(() -> new ApiException("Occurrence not found with ID: " + occurrenceEventId, BAD_REQUEST, EventCodes.OCCURRENCE_NOT_FOUND.name()));
 
         eventValidationService.validateUpdate(requestDto, occurrenceEvent.getEvent());
 
@@ -49,6 +52,7 @@ public class AdminOccurrenceEventService {
         EventUpdateResponse eventUpdateResponse = eventMapper.toEventUpdateResponse(occurrenceEvent.getEvent());
         return new OccurrenceEventUpdateResponse(1, List.of(eventUpdateResponse));
     }
+
     @Transactional
     public OccurrenceEventUpdateResponse updateFutureOccurrenceEvents(Long eventId, EventUpdateRequest requestDto) {
         if (eventExists(eventId)) {
@@ -77,11 +81,12 @@ public class AdminOccurrenceEventService {
 
     @Transactional
     public OccurrenceEventUpdateResponse updateRangeOccurrenceEvents(Long eventId, OccurrenceEventRangeUpdateRequest requestDto) {
-        if(eventExists(eventId)) {
-            List<OccurrenceEvent> allByEventIdAndStartBetween = occurrenceEventRepository.findAllByEvent_IdAndStartAfterAndStartBefore(
-                    eventId,
-                    requestDto.startAfter(),
-                    requestDto.endBefore());
+        if (requestDto.startAfter()
+                .isAfter(requestDto.endBefore())) {
+            throw new IllegalDateRangeException("Start date must be before end date", BAD_REQUEST, INVALID_DATE_RANGE.getCode());
+        }
+        if (eventExists(eventId)) {
+            List<OccurrenceEvent> allByEventIdAndStartBetween = occurrenceEventRepository.findAllByEvent_IdAndStartAfterAndStartBefore(eventId, requestDto.startAfter(), requestDto.endBefore());
             validateAndUpdateOccurrenceEvents(allByEventIdAndStartBetween, requestDto.eventUpdateRequestDto());
 
             List<EventUpdateResponse> eventUpdateResponses = persistAndMapOccurrenceEvents(allByEventIdAndStartBetween);
@@ -135,6 +140,7 @@ public class AdminOccurrenceEventService {
     }
 
     private boolean eventExists(Long eventId) {
-        return eventRepository.findById(eventId).isPresent();
+        return eventRepository.findById(eventId)
+                .isPresent();
     }
 }
