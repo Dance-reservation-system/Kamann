@@ -40,6 +40,7 @@ public class SecurityConfig {
             "/api/v1/auth/register-client",
             "/api/v1/auth/register-instructor",
             "/api/v1/auth/login",
+            "/api/v1/auth/refresh-token",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"

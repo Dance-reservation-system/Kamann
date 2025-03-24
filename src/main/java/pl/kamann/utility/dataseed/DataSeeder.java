@@ -195,11 +195,11 @@ public class DataSeeder {
     private void seedAttendanceForEvent(EventData eventData) {
         eventRepository.findByTitle(eventData.getTitle()).flatMap(event -> occurrenceEventRepository.findOccurrencesByEventId(event.getId())
                 .stream().findFirst()).ifPresent(occurrence -> {
-                    if (!occurrence.getParticipants().contains(client)) {
-                        createAttendance(client, occurrence);
-                        occurrence.getParticipants().add(client);
-                        occurrenceEventRepository.save(occurrence);
-                    }
+            if (!occurrence.getParticipants().contains(client)) {
+                createAttendance(client, occurrence);
+                occurrence.getParticipants().add(client);
+                occurrenceEventRepository.save(occurrence);
+            }
         });
     }
 
