@@ -7,8 +7,10 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -29,6 +31,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -59,26 +62,22 @@ public class SecurityConfig {
             "/api/v1/client/membership-cards/**"
     };
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
-
     @Bean
     @Profile(value = "prod")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return getSecurityFilterChain(http);
+        return getSecurityFilterChain(http, corsConfigurationSourceProd());
     }
 
     @Bean
     @Profile(value = "dev")
-    public SecurityFilterChain securityFilterChainDevOriented(HttpSecurity http) throws Exception {
-        return getSecurityFilterChain(http);
+    public SecurityFilterChain securityFilterChainDevOriented(HttpSecurity http, CorsConfigurationSource source) throws Exception {
+        return getSecurityFilterChain(http, corsConfigurationSourceDev());
     }
 
-    private SecurityFilterChain getSecurityFilterChain(HttpSecurity http) throws Exception {
+    private SecurityFilterChain getSecurityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(ADMIN_URLS).hasRole("ADMIN")
@@ -99,14 +98,34 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    @Profile("dev")
+    @Primary
+    public CorsConfigurationSource corsConfigurationSourceDev() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+
+        configuration.setAllowedOrigins(List.of(
+                "*"
+        ));
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
+    @Profile("prod")
+    public CorsConfigurationSource corsConfigurationSourceProd() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(
+                "https://kamann-production.up.railway.app"
+        ));
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
