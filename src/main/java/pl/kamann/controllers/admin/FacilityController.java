@@ -9,7 +9,7 @@ import pl.kamann.services.admin.FacilityService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/facility")
+@RequestMapping("/api/v1/facility")
 public class FacilityController {
     private final FacilityService facilityService;
 
