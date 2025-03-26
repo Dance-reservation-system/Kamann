@@ -2,6 +2,7 @@ package pl.kamann.dtos.event;
 
 import jakarta.validation.constraints.*;
 import lombok.Builder;
+import pl.kamann.entities.event.EventDifficulty;
 import pl.kamann.entities.event.EventStatus;
 
 import java.time.LocalDateTime;
@@ -46,6 +47,10 @@ public record EventDto(
         @NotNull(message = "Event type ID cannot be null")
         Long eventTypeId,
 
-        String eventTypeName
+        @NotNull
+        String eventTypeName,
+
+        @NotNull
+        EventDifficulty eventDifficulty
 ) {
 }
