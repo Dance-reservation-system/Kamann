@@ -12,7 +12,9 @@ public class Feedback {
 
     @Column(length = 1000)
     private String coachOpinion;
+    private int coachRating;
 
     @Column(length = 1000)
     private String classesOpinion;
+    private int classesRating;
 }
