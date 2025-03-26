@@ -39,7 +39,6 @@ public class DataSeeder {
     private final EventTypeRepository eventTypeRepository;
     private final EventRepository eventRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AdminOccurrenceEventService adminOccurrenceEventService;
     private final OccurrenceEventGeneratorService occurrenceEventGeneratorService;
     private final OccurrenceEventRepository occurrenceEventRepository;
     private final AttendanceRepository attendanceRepository;
@@ -161,7 +160,11 @@ public class DataSeeder {
 
     private void createEventWithOccurrences(EventData eventData, AppUser admin, AppUser instructor) {
         Event event = createEvent(eventData, admin, instructor);
-        occurrenceEventGeneratorService.generateOccurrences(event);
+        List<OccurrenceEvent> occurrenceEvents = occurrenceEventGeneratorService.generateOccurrences(event);
+
+        if (!occurrenceEvents.isEmpty()) {
+            occurrenceEventRepository.saveAll(occurrenceEvents);
+        }
     }
 
     private Event createEvent(EventData eventData, AppUser admin, AppUser instructor) {
