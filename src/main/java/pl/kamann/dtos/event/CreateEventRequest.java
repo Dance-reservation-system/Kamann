@@ -6,6 +6,7 @@ import lombok.Builder;
 import org.springframework.http.HttpStatus;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.entities.event.EventDifficulty;
 
 import java.time.LocalDateTime;
 
@@ -44,7 +45,11 @@ public record CreateEventRequest(
         Integer maxParticipants,
 
         @Schema(description = "Name of the event type", example = "dance")
-        String eventTypeName
+        String eventTypeName,
+
+        @Schema(description = "Difficulty of the event", example = "INTERMEDIATE")
+        @NotBlank
+        EventDifficulty eventDifficulty
 ) {
         public CreateEventRequest {
                 if (rrule != null && !rrule.isEmpty()) {
