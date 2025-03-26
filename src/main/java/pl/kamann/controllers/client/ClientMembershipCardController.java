@@ -12,7 +12,7 @@ import pl.kamann.config.exception.services.UserLookupService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/client/membership-cards")
+@RequestMapping("/api/v1/client/membership-cards")
 @RequiredArgsConstructor
 public class ClientMembershipCardController {
 
