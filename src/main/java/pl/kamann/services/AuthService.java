@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -75,13 +74,6 @@ public class AuthService {
                     "Email not confirmed.",
                     HttpStatus.UNAUTHORIZED,
                     AuthCodes.EMAIL_NOT_CONFIRMED.name()
-            );
-        } catch (BadCredentialsException e) {
-            log.warn("Invalid User credentials attempt for email: {}", request.email());
-            throw new ApiException(
-                    "Invalid user credentials.",
-                    HttpStatus.UNAUTHORIZED,
-                    AuthCodes.UNAUTHORIZED.name()
             );
         }
     }
@@ -154,10 +146,7 @@ public class AuthService {
     }
 
     public AppUserResponseDto getLoggedInAppUser(HttpServletRequest request) {
-        String token = jwtUtils.extractTokenFromRequest(request)
-                .orElseThrow(() -> new ApiException("Invalid or missing token",
-                        HttpStatus.UNAUTHORIZED,
-                        AuthCodes.INVALID_TOKEN.name()));
+        String token = jwtUtils.extractTokenFromRequest(request);
 
         if (!jwtUtils.validateToken(token)) {
             throw new ApiException("Invalid or expired token",
