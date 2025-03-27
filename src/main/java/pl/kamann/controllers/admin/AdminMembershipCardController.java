@@ -12,7 +12,7 @@ import pl.kamann.services.admin.AdminMembershipCardService;
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping("/api/admin/membership-cards")
+@RequestMapping("/api/v1/admin/membership-cards")
 @RequiredArgsConstructor
 public class AdminMembershipCardController {
 

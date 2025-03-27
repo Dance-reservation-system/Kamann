@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 //TODO to remove
 
 @RestController
-@RequestMapping("/admin/occurrence")
+@RequestMapping("/admin/v1/occurrence")
 @RequiredArgsConstructor
 public class OccurrenceEventGeneratorController {
 

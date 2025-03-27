@@ -29,7 +29,8 @@ public class JwtUtils {
     @Getter
     private SecretKey secretKey;
 
-    public JwtUtils() {}
+    public JwtUtils() {
+    }
 
     @PostConstruct
     public void init() {
@@ -63,16 +64,11 @@ public class JwtUtils {
     }
 
     private Claims extractAllClaims(String token) {
-        try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (JwtException e) {
-            log.error("JWT Parsing failed: {}", e.getMessage());
-            throw new RuntimeException("Invalid JWT token", e);
-        }
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     public boolean validateToken(String token, TokenType... expectedType) {

@@ -16,7 +16,7 @@ import pl.kamann.services.AppUserService;
 import pl.kamann.services.AuthService;
 
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
 @Slf4j
 public class AdminUserController {

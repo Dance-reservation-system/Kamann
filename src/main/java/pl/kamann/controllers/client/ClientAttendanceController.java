@@ -10,7 +10,7 @@ import pl.kamann.services.client.ClientAttendanceService;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/client/attendance")
+@RequestMapping("/api/v1/client/attendance")
 @RequiredArgsConstructor
 public class ClientAttendanceController {
 
