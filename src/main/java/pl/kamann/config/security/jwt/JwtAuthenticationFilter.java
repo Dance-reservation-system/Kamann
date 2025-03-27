@@ -63,49 +63,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
         log.debug("JWT Filter Intercepted Request: {}", requestURI);
 
+        if (isPublicUrl(requestURI)) {
+            log.debug("Skipping JWT authentication for: {}", requestURI);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
-            if (isPublicUrl(requestURI)) {
-                log.debug("Skipping JWT authentication for: {}", requestURI);
-                filterChain.doFilter(request, response);
-                return;
-            }
-
             String token = jwtUtils.extractTokenFromRequest(request);
-
-            if (!jwtUtils.validateToken(token)) {
-                log.debug("No valid JWT token found. Skipping authentication.");
-                filterChain.doFilter(request, response);
-                return;
-            }
+            jwtUtils.validateToken(token);
 
             log.debug("Extracted JWT Token: {}", token);
 
             String email = jwtUtils.extractEmail(token);
+            AuthUser user = authUserRepository.findByEmail(email)
+                    .orElseThrow(() -> {
+                        log.warn("User with email {} not found", email);
+                        return new UsernameNotFoundException("User not found");
+                    });
 
-            try {
-                AuthUser user = authUserRepository.findByEmail(email)
-                        .orElseThrow(() -> {
-                            log.warn("User with email {} not found", email);
-                            return new UsernameNotFoundException("User not found");
-                        });
+            List<GrantedAuthority> authorities = user.getRoles().stream()
+                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                    .collect(Collectors.toList());
 
-                List<GrantedAuthority> authorities = user.getRoles().stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-                        .collect(Collectors.toList());
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    user.getEmail(), null, authorities);
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        user.getEmail(), null, authorities);
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info("Authenticated user: {}", email);
-            } catch (UsernameNotFoundException ex) {
-                log.error("Authentication failed: {}", ex.getMessage());
-                SecurityContextHolder.clearContext();
-            } catch (Exception ex) {
-                log.error("An error occurred during authentication: {}", ex.getMessage());
-                SecurityContextHolder.clearContext();
-            }
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.info("Authenticated user: {}", email);
 
             filterChain.doFilter(request, response);
         } catch (Exception ex) {

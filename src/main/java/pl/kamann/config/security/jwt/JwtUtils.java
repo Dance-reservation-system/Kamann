@@ -86,13 +86,10 @@ public class JwtUtils {
 
             return !isTokenExpired(token);
         } catch (ExpiredJwtException e) {
-            log.error("JWT validation failed: {}", e.getMessage());
             throw new ExpiredJwtException(null, null, e.getMessage());
         } catch (SignatureException e) {
-            log.error("JWT signature validation failed: {}", e.getMessage());
             throw new SignatureException(e.getMessage());
         } catch (MalformedJwtException e) {
-            log.error("Malformed JWT: {}", e.getMessage());
             throw new MalformedJwtException(e.getMessage());
         }
     }
@@ -105,7 +102,6 @@ public class JwtUtils {
         String bearerToken = request.getHeader("Authorization");
 
         if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
-            log.warn("No JWT token found in request");
             throw new IllegalArgumentException("No JWT token found in request");
         }
 
