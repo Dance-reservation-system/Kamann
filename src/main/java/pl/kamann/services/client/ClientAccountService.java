@@ -15,6 +15,8 @@ public class ClientAccountService {
     private final UserLookupService userLookupService;
     private final UserDetailsMapper userDetailsMapper;
 
+
+    @GetMapping
     public UserDetailsDto getUserDetails() {
         AppUser loggedInAppUser = userLookupService.getLoggedInUser();
         AuthUser loggedAuthUser = loggedInAppUser.getAuthUser();
