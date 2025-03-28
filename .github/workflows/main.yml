@@ -55,4 +55,4 @@ jobs:
           git config --global user.email 'actions@github.com'
           git add badges/deployment-status.svg
           git commit -m "Update deployment status badge" || echo "No changes to commit"
-          git push
+          git push origin develop
