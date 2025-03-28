@@ -11,7 +11,7 @@ import pl.kamann.services.ClientFeedbackService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/client/feedback")
+@RequestMapping("/api/v1/client/feedback")
 public class ClientFeedbackController {
     private final ClientFeedbackService clientFeedbackService;
 
