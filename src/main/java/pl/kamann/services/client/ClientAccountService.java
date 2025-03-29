@@ -8,13 +8,14 @@ import pl.kamann.dtos.UserDetailsDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.mappers.UserDetailsMapper;
+import pl.kamann.repositories.AccountRepository;
 
 @Service
 @RequiredArgsConstructor
 public class ClientAccountService {
     private final UserLookupService userLookupService;
     private final UserDetailsMapper userDetailsMapper;
-
+    private final AccountRepository accountRepository;
 
     @GetMapping
     public UserDetailsDto getUserDetails() {
@@ -24,9 +25,11 @@ public class ClientAccountService {
         return userDetailsMapper.toUserDetailsDto(loggedAuthUser, loggedInAppUser);
     }
 
-    public UserDetailsDto updateUserDetails(UserDetailsDto userDetailsDto) {
-
-
-        return userDetailsDto;
-    }
+//    public UserDetailsDto updateUserDetails(UserDetailsDto requestDto) {
+//        AppUser loggedInAppUser = userLookupService.getLoggedInUser();
+//        AuthUser loggedAuthUser = loggedInAppUser.getAuthUser();
+//       UserDetailsDto updatedDto = accountRepository.updateUserAccountDetails(requestDto, loggedInAppUser, loggedAuthUser);
+//
+//        return updatedDto;
+//    }
 }

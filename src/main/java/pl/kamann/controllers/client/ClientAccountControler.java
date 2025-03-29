@@ -18,10 +18,10 @@ public class ClientAccountControler {
         return ResponseEntity.ok(clientAccountService.getUserDetails());
     }
 
-    @PutMapping
-    public ResponseEntity<UserDetailsDto> updateUserDetails(
-            @RequestBody() UserDetailsDto userDetailsDto
-    ) {
-        return ResponseEntity.ok(clientAccountService.updateUserDetails(userDetailsDto));
-    }
+//    @PatchMapping
+//    public ResponseEntity<UserDetailsDto> updateUserDetails(
+//            @RequestBody() UserDetailsDto userDetailsDto
+//    ) {
+//        return ResponseEntity.ok(clientAccountService.updateUserDetails(userDetailsDto));
+//    }
 }
