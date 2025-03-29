@@ -81,7 +81,7 @@ public class AuthService {
 
     public LoginResponse refreshToken(String refreshToken, HttpServletResponse response) {
         log.info("Refreshing token: refreshToken={}", refreshToken);
-        response.addCookie(unSetCookie());
+
         validationService.validateRefreshToken(refreshToken);
 
         RefreshToken token = refreshTokenService.getRefreshToken(refreshToken).orElseThrow(() ->
@@ -89,17 +89,20 @@ public class AuthService {
                         HttpStatus.UNAUTHORIZED,
                         AuthCodes.INVALID_TOKEN.name()));
 
-        refreshTokenService.deleteRefreshToken(token);
         validationService.isRefreshTokenExpired(token);
 
         AuthUser authUser = token.getAuthUser();
-        authUserRepository.save(authUser);
+
         String accessToken = jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles()));
         String newRefreshToken = refreshTokenService.generateRefreshToken(authUser);
 
+        refreshTokenService.deleteRefreshToken(token);
+
+        response.addCookie(unSetCookie());
+        response.addCookie(setCookie(newRefreshToken));
+
         log.info("Token refreshed successfully: email={}", authUser.getEmail());
 
-        response.addCookie(setCookie(newRefreshToken));
         return new LoginResponse(accessToken);
     }
 

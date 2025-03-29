@@ -91,7 +91,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(ADMIN_URLS).hasRole("ADMIN")
-                        .requestMatchers(CLIENT_URLS).hasAnyRole("CLIENT")
+                        .requestMatchers(CLIENT_URLS).hasAnyRole("CLIENT", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
