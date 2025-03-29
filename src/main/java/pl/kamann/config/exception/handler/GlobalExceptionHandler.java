@@ -1,5 +1,6 @@
 package pl.kamann.config.exception.handler;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,12 +14,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApiException(ApiException ex) {
-        ErrorResponse error = new ErrorResponse(
-                ex.getStatus().value(),
-                ex.getCode(),
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return new ResponseEntity<>(error, ex.getStatus());
+        return buildResponse(ex.getStatus(), ex.getCode(), ex.getMessage());
+    }
+
+    public ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String code, String message) {
+        ErrorResponse error = new ErrorResponse(status.value(), code, message, LocalDateTime.now());
+        return new ResponseEntity<>(error, status);
     }
 }

@@ -6,7 +6,8 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -24,16 +25,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 import pl.kamann.config.security.jwt.JwtAuthenticationFilter;
 
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final HandlerExceptionResolver exceptionResolver;
+
+    @Autowired
+    public SecurityConfig(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+        this.exceptionResolver = exceptionResolver;
+    }
 
     private static final String[] PUBLIC_URLS = {
             "/api/v1/auth/confirm",
@@ -62,6 +68,11 @@ public class SecurityConfig {
     };
 
     @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(exceptionResolver);
+    }
+
+    @Bean
     @Profile(value = "prod")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return getSecurityFilterChain(http, corsConfigurationSourceProd());
@@ -80,16 +91,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(ADMIN_URLS).hasRole("ADMIN")
-                        .requestMatchers(CLIENT_URLS).hasAnyRole("CLIENT")
+                        .requestMatchers(CLIENT_URLS).hasAnyRole("CLIENT", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(exception -> exception
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
                         .accessDeniedHandler(new CustomAccessDeniedHandler())
-                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
                 )
                 .build();
     }
