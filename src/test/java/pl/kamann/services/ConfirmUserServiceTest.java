@@ -3,7 +3,6 @@ package pl.kamann.services;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
@@ -60,6 +59,9 @@ public class ConfirmUserServiceTest {
 
     @Mock
     private ValidationService validationService;
+
+    @Mock
+    private ScheduledTaskService scheduledTaskService;
 
     @Test
     public void shouldConfirmAccount() {
@@ -156,6 +158,7 @@ public class ConfirmUserServiceTest {
         confirmUserService.confirmUserAccount(validToken);
 
         verify(authUserRepository, times(1)).save(authUser);
+        verify(scheduledTaskService).cancelTask(email);
         assertTrue(authUser.isEnabled());
     }
 
@@ -175,8 +178,8 @@ public class ConfirmUserServiceTest {
         when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
 
         doThrow(new ApiException("User with email " + email + " is already confirmed",
-                        HttpStatus.BAD_REQUEST,
-                        AuthCodes.USER_ALREADY_CONFIRMED.name()))
+                HttpStatus.BAD_REQUEST,
+                AuthCodes.USER_ALREADY_CONFIRMED.name()))
                 .when(exceptionHandlerService).handleUserAlreadyConfirmedException(email);
 
         ApiException exception = assertThrows(ApiException.class, () ->
@@ -188,6 +191,7 @@ public class ConfirmUserServiceTest {
         assertEquals(AuthCodes.USER_ALREADY_CONFIRMED.name(), exception.getCode());
 
         verify(exceptionHandlerService).handleUserAlreadyConfirmedException(email);
+        verify(scheduledTaskService, times(0)).cancelTask(email);
     }
 
     @Test
@@ -230,7 +234,7 @@ public class ConfirmUserServiceTest {
     }
 
     @Test
-    public void shouldSendConfirmationSuccessEmailWhenAccountIsConfirmed(){
+    public void shouldSendConfirmationSuccessEmailWhenAccountIsConfirmed() {
         String email = "user@example.com";
 
         AuthUser authUser = new AuthUser();

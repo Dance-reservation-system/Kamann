@@ -35,7 +35,7 @@ public class AuthController {
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.login(request, response));
-   }
+    }
 
     @PostMapping("/refresh-token")
     @Operation(summary = "Refresh Token", description = "Refreshes the JWT token.")
@@ -56,10 +56,7 @@ public class AuthController {
     }
 
     @GetMapping("/confirm")
-    @Operation(
-            summary = "Confirm a user account",
-            description = "Confirm a user account by providing the confirmation token. This endpoint requires the token as a query parameter."
-    )
+    @Operation(summary = "Confirm a user account", description = "Confirm a user account by providing the confirmation token. This endpoint requires the token as a query parameter.")
     public ResponseEntity<String> confirmUserAccount(@RequestParam("token") String token) {
         confirmUserService.confirmUserAccount(token);
         return ResponseEntity.ok("Your account has been confirmed.");
@@ -77,5 +74,12 @@ public class AuthController {
     public ResponseEntity<String> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
         passwordResetService.resetPasswordWithToken(request);
         return ResponseEntity.ok("Password has been reset successfully.");
+    }
+
+    @PostMapping("/delete-request")
+    @Operation(summary = "Request Account Deletion", description = "Request account deletion.")
+    public ResponseEntity<?> requestAccountDeletion(@RequestParam String email) {
+        authService.requestAccountDeletion(email);
+        return ResponseEntity.ok("Account deletion requested.");
     }
 }
