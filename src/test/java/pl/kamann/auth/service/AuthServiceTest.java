@@ -19,6 +19,7 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.exception.services.RoleLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
@@ -33,6 +34,7 @@ import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.RefreshTokenService;
+import pl.kamann.services.ScheduledTaskService;
 import pl.kamann.services.factory.UserFactory;
 
 import java.util.Map;
@@ -85,6 +87,12 @@ class AuthServiceTest {
 
     @Mock
     private RefreshTokenService refreshTokenService;
+
+    @Mock
+    private UserLookupService userLookupService;
+
+    @Mock
+    private ScheduledTaskService scheduledTaskService;
 
     @InjectMocks
     private AuthService authService;
@@ -345,5 +353,53 @@ class AuthServiceTest {
         verify(validationService).validateEmailNotTaken(request.email());
         verify(roleLookupService).findRoleByName(RoleCodes.INSTRUCTOR.name());
         verifyNoInteractions(passwordEncoder, appUserRepository);
+    }
+
+    @Test
+    void shouldRequestAccountDeletionSuccessfully() {
+        String email = "user@example.com";
+
+        AuthUser authUser = AuthUser.builder()
+                .email(email)
+                .status(AuthUserStatus.ACTIVE)
+                .build();
+
+        AppUser appUser = AppUser.builder()
+                .authUser(authUser)
+                .build();
+
+        when(userLookupService.findUserByEmail(email)).thenReturn(appUser);
+
+        authService.requestAccountDeletion(email);
+
+        assertEquals(AuthUserStatus.PENDING_DELETION, authUser.getStatus());
+        verify(authUserRepository).save(authUser);
+        verify(scheduledTaskService).scheduledSoftDeletionUser(authUser);
+    }
+
+    @Test
+    void shouldMarkUserAsActiveWhenLoginAttemptedWithPendingDeletionStatus() {
+        String email = "user@example.com";
+        String password = "password";
+
+        AuthUser authUser = AuthUser.builder()
+                .email(email)
+                .status(AuthUserStatus.PENDING_DELETION)
+                .enabled(true)
+                .roles(Set.of(clientRole))
+                .build();
+
+        LoginRequest loginRequest = new LoginRequest(email, password);
+        Authentication mockAuthentication = new UsernamePasswordAuthenticationToken(authUser, "encodedPassword", authUser.getAuthorities());
+
+        when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
+
+        LoginResponse loginResponse = authService.login(loginRequest, httpServletResponse);
+
+        assertNotNull(loginResponse);
+        assertEquals(AuthUserStatus.ACTIVE, authUser.getStatus());
+
+        verify(scheduledTaskService, times(1)).cancelTask(email);
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }
 }
