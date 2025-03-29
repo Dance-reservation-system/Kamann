@@ -58,8 +58,6 @@ public class AuthUser implements UserDetails, Serializable {
     @Enumerated(EnumType.STRING)
     private AuthUserStatus status;
 
-    private LocalDateTime deletionRequestedAt;
-
     @Override
     public String getUsername() {
         return email;

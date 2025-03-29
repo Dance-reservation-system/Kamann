@@ -67,7 +67,6 @@ public class AuthService {
             if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
                 scheduledTaskService.cancelTask(authUser.getEmail());
                 authUser.setStatus(AuthUserStatus.ACTIVE);
-                authUser.setDeletionRequestedAt(null);
             }
             log.info("User logged in successfully: email={}", authUser.getEmail());
 
@@ -92,7 +91,6 @@ public class AuthService {
             );
         }
     }
-
 
     public LoginResponse refreshToken(String refreshToken, HttpServletResponse response) {
         log.info("Refreshing token: refreshToken={}", refreshToken);
@@ -184,7 +182,6 @@ public class AuthService {
         AuthUser authUser = userLookupService.findUserByEmail(email).getAuthUser();
 
         authUser.setStatus(AuthUserStatus.PENDING_DELETION);
-        authUser.setDeletionRequestedAt(LocalDateTime.now());
 
         scheduledTaskService.scheduledSoftDeletionUser(authUser);
         authUserRepository.save(authUser);
