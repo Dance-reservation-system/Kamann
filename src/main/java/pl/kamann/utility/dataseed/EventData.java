@@ -2,6 +2,7 @@ package pl.kamann.utility.dataseed;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import pl.kamann.entities.event.EventDifficulty;
 import pl.kamann.entities.event.EventType;
 
 import java.time.LocalDateTime;
@@ -16,4 +17,5 @@ public class EventData {
     private final int maxParticipants;
     private final EventType eventType;
     private final String recurrenceRule;
+    private final EventDifficulty eventDifficulty;
 }

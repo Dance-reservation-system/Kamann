@@ -1,0 +1,58 @@
+name: Post Deploy Action - Railway
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [deploy]
+
+jobs:
+  update-deployment-status:
+    runs-on: ubuntu-latest
+
+    permissions:
+        contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Create 'badges' directory
+        run: |
+          mkdir -p badges  # Ensure directory exists
+
+      - name: Get Deployment Info from Railway (Webhook)
+        run: |
+          curl -X POST https://api.railway.app/v1/projects/${{ secrets.RAILWAY_PROJECT_ID }}/deployments \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_API_KEY }}" \
+            -d '{"query": "query { deployments(first: 1, input: {projectId: \"${{ secrets.RAILWAY_PROJECT_ID }}\"}) { edges { node { status } } } }"}' \
+            -o deployment-status.json
+          
+          # Extract status from JSON
+          STATUS=$(jq -r '.data.deployments.edges[0].node.status' deployment-status.json)
+
+          # Determine badge color
+          case "$STATUS" in
+            "SUCCESS") COLOR="green" ;;
+            "FAILED") COLOR="red" ;;
+            "DEPLOYING") COLOR="yellow" ;;
+            "SLEEPING") COLOR="blue" ;;
+            *) COLOR="grey" ;;  # Default unknown state
+          esac
+
+          echo "STATUS=$STATUS" >> $GITHUB_ENV
+          echo "COLOR=$COLOR" >> $GITHUB_ENV
+
+      - name: Update Deployment Badge
+        uses: emibcn/badge-action@v2
+        with:
+          label: "Railway deployment"
+          status: "${{ env.STATUS }}"
+          color: "${{ env.COLOR }}"
+          path: "badges/deployment-status.svg"
+
+      - name: Commit and Push Badge
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'actions@github.com'
+          git add badges/deployment-status.svg
+          git commit -m "Update deployment status badge" || echo "No changes to commit"
+          git push origin develop

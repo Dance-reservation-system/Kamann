@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @RestController
-@RequestMapping("/admin/occurrence")
+@RequestMapping("/admin/v1/occurrence")
 @RequiredArgsConstructor
 public class OccurrenceEventGeneratorController {
 

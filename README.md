@@ -8,7 +8,15 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
 ![Maven](https://img.shields.io/badge/Maven-C71A36?logo=apachemaven)
 ![JWT](https://img.shields.io/badge/JWT-000000?logo=jsonwebtokens&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?logo=swagger&logoColor=black)
-[![Build and Test Application](https://github.com/Dance-reservation-system/Kamann/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Dance-reservation-system/Kamann/actions/workflows/ci-cd.yml)
+
+
+![FE Contributors](https://img.shields.io/github/contributors/Dance-reservation-system/Kamann-web?color=blue&label=Active-FE)
+![BE Contributors](https://img.shields.io/github/contributors/Dance-reservation-system/Kamann?color=green&label=Active-BE)
+
+[![Build with Tests](https://github.com/Dance-reservation-system/Kamann/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Dance-reservation-system/Kamann/actions/workflows/ci-cd.yml)
+![GitHub last commit](https://img.shields.io/github/last-commit/Dance-reservation-system/Kamann?color=green)
+![Deploy - Railway](https://github.com/Dance-reservation-system/Kamann/actions/workflows/main.yml/badge.svg)
+
 
 ## 🌟 Features
 
@@ -37,12 +45,14 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
 - **Security**: JWT Authentication
 - **API Docs**: Swagger/OpenAPI 3.0
 - **CI/CD**: GitHub Actions
+- **Deploy**: Railway (Cloud PaaS)
+
 
 ## 🚀 Installation
 
 ### 1. Clone Repository and change into the project directory
   ```bash
-  git clone https://github.com/F1iper/kamann.git
+  git clone https://github.com/Dance-reservation-system/kamann.git
   cd kamann/backend
   ```
 
@@ -67,7 +77,9 @@ docker compose up -d --build
   **http://localhost:8080/swagger-ui.html**
 
 ####  Registration Endpoint:
-  **POST /api/auth/register**
+  **POST /api/v1/auth/register-client** (requires confirm email)
+  
+  **POST /api/v1/auth/register-instructor** (requires admin confirmation)
   
   Request Body (using RegisterRequest):
 ```json
@@ -75,14 +87,13 @@ docker compose up -d --build
   "email": "user@example.com",
   "password": "password",
   "firstName": "John",
-  "lastName": "Doe",
-  "role": "CLIENT"
+  "lastName": "Doe"
 }
 ```
   
 ####  Authorization: 
   Use JWT token from
-  **POST /api/auth/login**
+  **POST /api/v1/auth/login**
   
   Request Body:
   ```json
@@ -94,16 +105,14 @@ docker compose up -d --build
 
 
 ### 🚦 CI/CD Pipeline
-  Automated builds and tests via GitHub Actions
-  
-  Integration testing with Testcontainers
-  
-  Production secrets managed through GitHub Secrets
+  - Integration testing with H2 in-memory database (GithubActions Workflow)
+  - Production deploys via Railway (Dedicated release branch)
+  - Production secrets managed through GitHub Secrets + Railway Secrets
   
 
 ### 🖥️ Frontend
   Client available at:
-**[https://github.com/Osinek280/kamann](https://github.com/Osinek280/kamann)** (in progress)
+**[https://github.com/Dance-reservation-system/Kamann-web](https://github.com/Dance-reservation-system/Kamann-web)**
 
 ### 📝 Roadmap
 
