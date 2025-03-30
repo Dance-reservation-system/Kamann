@@ -41,21 +41,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Slugify issue title
-        uses: amannn/action-slugify@v1
-        id: slugify
-        with:
-          input_string: ${{ github.event.issue.title }}
-
       - name: Create a new branch based on the issue number
         run: |
-          # Get the slugified issue title
-          SLUGGED_TITLE="${{ steps.slugify.outputs.slug }}"
-
-          # Create the branch name
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          SLUGGED_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-')
+          
           BRANCH_NAME="KMN-${CURRENT_NUMBER}-${SLUGGED_TITLE}"
           
-          # Create the branch and push it
           git checkout -b "$BRANCH_NAME"
           git push --set-upstream origin "$BRANCH_NAME"
         env:
