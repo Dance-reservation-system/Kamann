@@ -1,10 +1,11 @@
-name: Auto-number Issues
+name: Auto-number Issues and Create Branches
 on:
   issues:
-    types: [opened]
+    types: [opened, assigned]
 
 jobs:
-  add-issue-number:
+  number-issue:
+    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -12,6 +13,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Initialize issue number file if not exists
+        run: |
+          if [ ! -f .github/ISSUE_NUMBER.txt ]; then
+            mkdir -p .github
+            echo "1" > .github/ISSUE_NUMBER.txt
+          fi
 
       - name: Read current issue number
         id: issue_number
@@ -41,6 +49,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
+  create-branch:
+    if: github.event.action == 'assigned'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Slugify issue title with shell script
         id: slugify
         run: |
@@ -48,13 +66,26 @@ jobs:
           SLUGGED_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
           echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
 
+      - name: Extract KMN number from title
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          KMN_NUMBER=$(echo "$ISSUE_TITLE" | grep -o 'KMN-[0-9]*' | cut -d'-' -f2)
+          echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
+
       - name: Create a new branch based on the issue number
         run: |
           SLUGGED_TITLE="${{ env.SLUGGED_TITLE }}"
-
-          BRANCH_NAME="KMN-${CURRENT_NUMBER}-${SLUGGED_TITLE}"
-          
+          BRANCH_NAME="KMN-${{ env.KMN_NUMBER }}-${SLUGGED_TITLE}"
           git checkout -b "$BRANCH_NAME"
           git push --set-upstream origin "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Add branch link to issue
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+          BRANCH_URL="${REPO_URL}/tree/${{ env.BRANCH_NAME }}"
+          gh issue comment "${{ github.event.issue.number }}" --body "Created branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
