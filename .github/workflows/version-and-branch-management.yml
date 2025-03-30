@@ -59,23 +59,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Slugify issue title with shell script
-        id: slugify
-        run: |
-          ISSUE_TITLE="${{ github.event.issue.title }}"
-          SLUGGED_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
-          echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
-
-      - name: Extract KMN number from title
+      - name: Extract KMN number and clean title
+        id: extract
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
           KMN_NUMBER=$(echo "$ISSUE_TITLE" | grep -o 'KMN-[0-9]*' | cut -d'-' -f2)
+          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//')
+          SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
           echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
+          echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
 
       - name: Create a new branch based on the issue number
         run: |
-          SLUGGED_TITLE="${{ env.SLUGGED_TITLE }}"
-          BRANCH_NAME="KMN-${{ env.KMN_NUMBER }}-${SLUGGED_TITLE}"
+          BRANCH_NAME="KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
           git checkout -b "$BRANCH_NAME"
           git push --set-upstream origin "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
