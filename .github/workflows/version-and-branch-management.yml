@@ -43,7 +43,11 @@ jobs:
 
       - name: Create a new branch based on the issue number
         run: |
-          BRANCH_NAME="KMN-${CURRENT_NUMBER}-${{ github.event.issue.title | slugify }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          SLUGGED_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-')
+          
+          BRANCH_NAME="KMN-${CURRENT_NUMBER}-${SLUGGED_TITLE}"
+          
           git checkout -b "$BRANCH_NAME"
           git push --set-upstream origin "$BRANCH_NAME"
         env:
