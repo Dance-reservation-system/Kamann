@@ -41,11 +41,17 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Create a new branch based on the issue number
+      - name: Slugify issue title with shell script
+        id: slugify
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
-          SLUGGED_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-')
-          
+          SLUGGED_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
+          echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
+
+      - name: Create a new branch based on the issue number
+        run: |
+          SLUGGED_TITLE="${{ env.SLUGGED_TITLE }}"
+
           BRANCH_NAME="KMN-${CURRENT_NUMBER}-${SLUGGED_TITLE}"
           
           git checkout -b "$BRANCH_NAME"
