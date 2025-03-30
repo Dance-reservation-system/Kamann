@@ -1,0 +1,42 @@
+name: Auto-number Issues
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  add-issue-number:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read current issue number
+        id: issue_number
+        run: |
+          CURRENT_NUMBER=$(cat .github/ISSUE_NUMBER.txt)
+          echo "CURRENT_NUMBER=$CURRENT_NUMBER" >> $GITHUB_ENV
+
+      - name: Update issue title with KMN number
+        run: |
+          gh issue edit "${{ github.event.issue.number }}" --title "KMN-${CURRENT_NUMBER}: ${{ github.event.issue.title }}"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Increment issue number
+        run: |
+          NEXT_NUMBER=$((CURRENT_NUMBER + 1))
+          echo $NEXT_NUMBER > .github/ISSUE_NUMBER.txt
+          echo "NEXT_NUMBER=$NEXT_NUMBER" >> $GITHUB_ENV
+
+      - name: Commit and push updated number
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/ISSUE_NUMBER.txt
+          git commit -m "Increment issue number to $NEXT_NUMBER"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
