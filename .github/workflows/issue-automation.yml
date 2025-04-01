@@ -3,6 +3,10 @@ on:
   issues:
     types: [opened, assigned]
 
+concurrency:
+  group: issue-automation-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 jobs:
   number-issue:
     if: github.event.action == 'opened'
@@ -89,7 +93,7 @@ jobs:
             NEW_TITLE="KMN-${CURRENT_NUMBER}: $CLEAN_TITLE"
             KMN_NUMBER="$CURRENT_NUMBER"
             NEXT_NUMBER=$((CURRENT_NUMBER + 1))
-            gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
+            gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE" --remove-label "Proposal"
           else
             KMN_NUMBER=$(echo "$ISSUE_TITLE" | grep -o 'KMN-[0-9]*' | cut -d'-' -f2 || echo "$CURRENT_NUMBER")
             NEW_TITLE="$ISSUE_TITLE"
