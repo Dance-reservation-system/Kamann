@@ -31,20 +31,25 @@ jobs:
           CURRENT_NUMBER=$(cat .github/ISSUE_NUMBER.txt)
           echo "CURRENT_NUMBER=$CURRENT_NUMBER" >> $GITHUB_ENV
 
-      - name: Process issue title
+      - name: Process issue title and assign labels
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
-          if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
-            echo "Opened proposal, keeping title and adding Proposal label"
-            NEW_TITLE="$ISSUE_TITLE"
-            NEXT_NUMBER="$CURRENT_NUMBER"
-            gh issue edit "${{ github.event.issue.number }}" --add-label "Proposal"
+          if echo "$ISSUE_TITLE" | grep -iq "feature"; then
+            echo "Assigning 'feature' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "feature"
+            BRANCH_PREFIX="feature"
+          elif echo "$ISSUE_TITLE" | grep -iq "bug"; then
+            echo "Assigning 'bugfix' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "bugfix"
+            BRANCH_PREFIX="bugfix"
           else
-            NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
-            NEXT_NUMBER=$((CURRENT_NUMBER + 1))
-            gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
+            echo "No label matched, skipping label assignment"
           fi
+          NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
+          NEXT_NUMBER=$((CURRENT_NUMBER + 1))
+          gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
+          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
           echo "NEXT_NUMBER=$NEXT_NUMBER" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -88,7 +93,7 @@ jobs:
         id: process_title
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
-          if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
+          if echo "$ISSUE_TITLE" | grep -iq "proposal"; then
             CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/^proposal *//i')
             NEW_TITLE="KMN-${CURRENT_NUMBER}: $CLEAN_TITLE"
             KMN_NUMBER="$CURRENT_NUMBER"
@@ -122,7 +127,7 @@ jobs:
 
       - name: Create a new branch based on the issue number
         run: |
-          BRANCH_NAME="KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
+          BRANCH_NAME="${BRANCH_PREFIX}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
             echo "Branch $BRANCH_NAME already exists, skipping"
           else
