@@ -93,19 +93,21 @@ jobs:
         id: process_title
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
-          if echo "$ISSUE_TITLE" | grep -iq "proposal"; then
-            CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/^proposal *//i')
-            NEW_TITLE="KMN-${CURRENT_NUMBER}: $CLEAN_TITLE"
-            KMN_NUMBER="$CURRENT_NUMBER"
-            NEXT_NUMBER=$((CURRENT_NUMBER + 1))
-            gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE" --remove-label "Proposal"
+          
+          if echo "$ISSUE_TITLE" | grep -iq "bug"; then
+            BRANCH_PREFIX="bugfix"
           else
-            KMN_NUMBER=$(echo "$ISSUE_TITLE" | grep -o 'KMN-[0-9]*' | cut -d'-' -f2 || echo "$CURRENT_NUMBER")
-            NEW_TITLE="$ISSUE_TITLE"
-            NEXT_NUMBER="$CURRENT_NUMBER"
+            BRANCH_PREFIX="feature"
           fi
-          CLEAN_TITLE=$(echo "$NEW_TITLE" | sed 's/KMN-[0-9]*: *//')
+
+          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
+
+          NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
+          KMN_NUMBER="$CURRENT_NUMBER"
+          NEXT_NUMBER=$((CURRENT_NUMBER + 1))
+
+          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
           echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
           echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
@@ -146,3 +148,4 @@ jobs:
           gh issue comment "${{ github.event.issue.number }}" --body "Created branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
