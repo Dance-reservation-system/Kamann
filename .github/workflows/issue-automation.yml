@@ -34,6 +34,8 @@ jobs:
       - name: Process issue title and assign labels
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
+          
+          # Assign labels based on the issue title
           if echo "$ISSUE_TITLE" | grep -iq "feature"; then
             echo "Assigning 'feature' label"
             gh issue edit "${{ github.event.issue.number }}" --add-label "feature"
@@ -44,7 +46,10 @@ jobs:
             BRANCH_PREFIX="bugfix"
           else
             echo "No label matched, skipping label assignment"
+            BRANCH_PREFIX="feature"  # Default if no label matches
           fi
+
+          # Update the issue title with the correct number
           NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
           NEXT_NUMBER=$((CURRENT_NUMBER + 1))
           gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
@@ -76,13 +81,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Initialize issue number file if not exists
-        run: |
-          if [ ! -f .github/ISSUE_NUMBER.txt ]; then
-            mkdir -p .github
-            echo "1" > .github/ISSUE_NUMBER.txt
-          fi
-
       - name: Read current issue number
         id: issue_number
         run: |
@@ -93,13 +91,12 @@ jobs:
         id: process_title
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
-          
-          # Check if it's a proposal
+
+          # Check if it's a proposal and skip branch creation
           if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
-            # Add proposal label and do not create branch
-            echo "Issue is a proposal, adding 'Proposal' label"
+            echo "Issue is a proposal, adding 'Proposal' label and skipping branch creation"
             gh issue edit "${{ github.event.issue.number }}" --add-label "Proposal"
-            exit 0
+            exit 0  # Skip branch creation
           fi
 
           # Determine prefix based on the issue title (bug or feature)
@@ -116,7 +113,7 @@ jobs:
           NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
           KMN_NUMBER="$CURRENT_NUMBER"
 
-          # Do NOT increment here; we'll only increment once during the commit step
+          # No increment here; it happens later in the commit step
           NEXT_NUMBER=$CURRENT_NUMBER
 
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
@@ -144,6 +141,7 @@ jobs:
           # Create branch using the current issue number if it's not a proposal
           BRANCH_NAME="${BRANCH_PREFIX}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
           
+          # Check if the branch already exists
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
             echo "Branch $BRANCH_NAME already exists, skipping"
           else
