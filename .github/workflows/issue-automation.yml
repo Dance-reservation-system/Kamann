@@ -3,12 +3,63 @@ on:
   issues:
     types: [opened, assigned]
 
-concurrency:
-  group: issue-automation-${{ github.event.issue.number }}
-  cancel-in-progress: false
-
 jobs:
-  process-issue:
+  number-issue:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize issue number file if not exists
+        run: |
+          if [ ! -f .github/ISSUE_NUMBER.txt ]; then
+            mkdir -p .github
+            echo "1" > .github/ISSUE_NUMBER.txt
+          fi
+
+      - name: Read current issue number
+        id: issue_number
+        run: |
+          CURRENT_NUMBER=$(cat .github/ISSUE_NUMBER.txt)
+          echo "CURRENT_NUMBER=$CURRENT_NUMBER" >> $GITHUB_ENV
+
+      - name: Process issue title
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
+            echo "Opened proposal, keeping title and adding Proposal label"
+            NEW_TITLE="$ISSUE_TITLE"
+            NEXT_NUMBER="$CURRENT_NUMBER"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "Proposal"
+          else
+            NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
+            NEXT_NUMBER=$((CURRENT_NUMBER + 1))
+            gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
+          fi
+          echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
+          echo "NEXT_NUMBER=$NEXT_NUMBER" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Commit and push updated number
+        if: env.NEXT_NUMBER != env.CURRENT_NUMBER
+        run: |
+          echo ${{ env.NEXT_NUMBER }} > .github/ISSUE_NUMBER.txt
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/ISSUE_NUMBER.txt
+          git commit -m "Increment issue number to ${{ env.NEXT_NUMBER }}"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  create-branch:
+    if: github.event.action == 'assigned'
+    needs: number-issue  # waits for number-issue job, avoiding race conditions, but slowing down the process.
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -34,30 +85,16 @@ jobs:
         id: process_title
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
-          if [ "${{ github.event.action }}" = "opened" ]; then
-            if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
-              echo "Opened proposal, keeping title"
-              NEW_TITLE="$ISSUE_TITLE"
-              KMN_NUMBER="prop"  # Placeholder, not used until assigned
-              NEXT_NUMBER="$CURRENT_NUMBER"
-            else
-              NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
-              KMN_NUMBER="$CURRENT_NUMBER"
-              NEXT_NUMBER=$((CURRENT_NUMBER + 1))
-              gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
-            fi
-          elif [ "${{ github.event.action }}" = "assigned" ]; then
-            if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
-              CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/^proposal *//i')
-              NEW_TITLE="KMN-${CURRENT_NUMBER}: $CLEAN_TITLE"
-              KMN_NUMBER="$CURRENT_NUMBER"
-              NEXT_NUMBER=$((CURRENT_NUMBER + 1))
-              gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
-            else
-              KMN_NUMBER=$(echo "$ISSUE_TITLE" | grep -o 'KMN-[0-9]*' | cut -d'-' -f2 || echo "none")
-              NEW_TITLE="$ISSUE_TITLE"
-              NEXT_NUMBER="$CURRENT_NUMBER"
-            fi
+          if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
+            CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/^proposal *//i')
+            NEW_TITLE="KMN-${CURRENT_NUMBER}: $CLEAN_TITLE"
+            KMN_NUMBER="$CURRENT_NUMBER"
+            NEXT_NUMBER=$((CURRENT_NUMBER + 1))
+            gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
+          else
+            KMN_NUMBER=$(echo "$ISSUE_TITLE" | grep -o 'KMN-[0-9]*' | cut -d'-' -f2 || echo "$CURRENT_NUMBER")
+            NEW_TITLE="$ISSUE_TITLE"
+            NEXT_NUMBER="$CURRENT_NUMBER"
           fi
           CLEAN_TITLE=$(echo "$NEW_TITLE" | sed 's/KMN-[0-9]*: *//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
@@ -81,7 +118,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Create a new branch based on the issue number
-        if: github.event.action == 'assigned'
         run: |
           BRANCH_NAME="KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
@@ -95,7 +131,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Add branch link to issue
-        if: github.event.action == 'assigned' && steps.create_branch.outputs.stdout != 'Branch already exists'
+        if: steps.create_branch.outputs.stdout != 'Branch already exists'
         run: |
           REPO_URL="https://github.com/${{ github.repository }}"
           BRANCH_URL="${REPO_URL}/tree/${{ env.BRANCH_NAME }}"
