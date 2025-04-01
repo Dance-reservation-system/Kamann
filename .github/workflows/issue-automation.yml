@@ -95,25 +95,25 @@ jobs:
           # Check if it's a proposal and skip branch creation
           if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
             echo "Issue is a proposal, adding 'Proposal' label and skipping branch creation"
-            gh issue edit "${{ github.event.issue.number }}" --add-label "Proposal"
-            exit 0  # Skip branch creation
+            gh issue edit "${{ github.event.issue.number }}" --add-label "proposal"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "low priority"
+            echo "BRANCH_PREFIX=proposal" >> $GITHUB_ENV
+            echo "NEW_TITLE=$ISSUE_TITLE" >> $GITHUB_ENV
+            exit 0
           fi
 
-          # Determine prefix based on the issue title (bug or feature)
           if echo "$ISSUE_TITLE" | grep -iq "bug"; then
             BRANCH_PREFIX="bugfix"
           else
             BRANCH_PREFIX="feature"
           fi
 
-          # Format the branch name and slugged title
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
 
           NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
           KMN_NUMBER="$CURRENT_NUMBER"
 
-          # No increment here; it happens later in the commit step
           NEXT_NUMBER=$CURRENT_NUMBER
 
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
@@ -138,16 +138,16 @@ jobs:
 
       - name: Create a new branch based on the current issue number
         run: |
-          # Create branch using the current issue number if it's not a proposal
-          BRANCH_NAME="${BRANCH_PREFIX}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
-          
-          # Check if the branch already exists
-          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
-            echo "Branch $BRANCH_NAME already exists, skipping"
-          else
-            git checkout -b "$BRANCH_NAME"
-            git push --set-upstream origin "$BRANCH_NAME"
-            echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          if [[ "${{ env.BRANCH_PREFIX }}" != "proposal" ]]; then
+            BRANCH_NAME="${BRANCH_PREFIX}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
+            
+            if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+              echo "Branch $BRANCH_NAME already exists, skipping"
+            else
+              git checkout -b "$BRANCH_NAME"
+              git push --set-upstream origin "$BRANCH_NAME"
+              echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+            fi
           fi
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
