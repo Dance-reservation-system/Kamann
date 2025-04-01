@@ -94,18 +94,30 @@ jobs:
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
           
+          # Check if it's a proposal
+          if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
+            # Add proposal label and do not create branch
+            echo "Issue is a proposal, adding 'Proposal' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "Proposal"
+            exit 0
+          fi
+
+          # Determine prefix based on the issue title (bug or feature)
           if echo "$ISSUE_TITLE" | grep -iq "bug"; then
             BRANCH_PREFIX="bugfix"
           else
             BRANCH_PREFIX="feature"
           fi
 
+          # Format the branch name and slugged title
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
 
           NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
           KMN_NUMBER="$CURRENT_NUMBER"
-          NEXT_NUMBER=$((CURRENT_NUMBER + 1))
+
+          # Do NOT increment here; we'll only increment once during the commit step
+          NEXT_NUMBER=$CURRENT_NUMBER
 
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
@@ -127,9 +139,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Create a new branch based on the issue number
+      - name: Create a new branch based on the current issue number
         run: |
+          # Create branch using the current issue number if it's not a proposal
           BRANCH_NAME="${BRANCH_PREFIX}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
+          
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
             echo "Branch $BRANCH_NAME already exists, skipping"
           else
@@ -148,4 +162,3 @@ jobs:
           gh issue comment "${{ github.event.issue.number }}" --body "Created branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
