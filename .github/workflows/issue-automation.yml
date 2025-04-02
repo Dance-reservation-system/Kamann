@@ -41,8 +41,8 @@ jobs:
             gh issue edit "${{ github.event.issue.number }}" --add-label "feature"
             BRANCH_PREFIX="feature"
           elif echo "$ISSUE_TITLE" | grep -iq "bug"; then
-            echo "Assigning 'bugfix' label"
-            gh issue edit "${{ github.event.issue.number }}" --add-label "bugfix"
+            echo "Assigning 'bug' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "bug"
             BRANCH_PREFIX="bugfix"
           else
             echo "No specific label matched, defaulting to 'feature'"
