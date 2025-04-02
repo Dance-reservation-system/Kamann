@@ -11,6 +11,7 @@ import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.mappers.UserDetailsMapper;
 import pl.kamann.repositories.AccountRepository;
+import pl.kamann.repositories.AuthUserRepository;
 
 import java.time.LocalDateTime;
 
@@ -21,6 +22,7 @@ public class ClientAccountService {
     private final UserDetailsMapper userDetailsMapper;
     private final AccountRepository accountRepository;
     private final AccountValidationService accountValidationService;
+    private final AuthUserRepository authUserRepository;
 
     @GetMapping
     public UserDetailsDto getUserDetails() {
@@ -36,6 +38,7 @@ public class ClientAccountService {
 
         updateUserAccount(loggedInAppUser, requestDto);
         accountRepository.save(loggedInAppUser);
+        authUserRepository.save(loggedInAppUser.getAuthUser());
 
         return userDetailsMapper.toUserDetailsDto(loggedInAppUser);
     }
