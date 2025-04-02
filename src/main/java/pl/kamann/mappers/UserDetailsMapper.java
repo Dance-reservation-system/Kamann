@@ -12,5 +12,13 @@ public interface UserDetailsMapper {
     @Mapping(target = "phone", source = "appUser.phone")
     @Mapping(target = "firstName", source = "appUser.firstName")
     @Mapping(target = "lastName", source = "appUser.lastName")
-    UserDetailsDto toUserDetailsDto(AuthUser authUser, AppUser appUser);
+    @Mapping(target = "roles", source = "appUser.authUser.roles", qualifiedByName = "mapRolesToStrings")
+    UserDetailsDto toUserDetailsDto(AppUser appUser);
+
+    @Named("mapRolesToStrings")
+    default Set<String> mapRolesToStrings(Set<Role> roles) {
+        return roles != null ? roles.stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet()) : new HashSet<>();
+    }
 }
