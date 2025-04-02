@@ -1,0 +1,165 @@
+name: Issue Automation
+on:
+  issues:
+    types: [opened, assigned]
+
+concurrency:
+  group: issue-automation-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  number-issue:
+    if: github.event.action == 'opened' && !contains(github.event.issue.title, 'proposal')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize issue number file if not exists
+        run: |
+          if [ ! -f .github/ISSUE_NUMBER.txt ]; then
+            mkdir -p .github
+            echo "1" > .github/ISSUE_NUMBER.txt
+          fi
+
+      - name: Read current issue number
+        id: issue_number
+        run: |
+          CURRENT_NUMBER=$(cat .github/ISSUE_NUMBER.txt)
+          echo "CURRENT_NUMBER=$CURRENT_NUMBER" >> $GITHUB_ENV
+
+      - name: Process issue title and assign labels
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          
+          # Assign labels and branch prefix based on the issue title
+          if echo "$ISSUE_TITLE" | grep -iq "feature"; then
+            echo "Assigning 'feature' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "feature"
+            BRANCH_PREFIX="feature"
+          elif echo "$ISSUE_TITLE" | grep -iq "bug"; then
+            echo "Assigning 'bug' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "bug"
+            BRANCH_PREFIX="bugfix"
+          else
+            echo "No specific label matched, defaulting to 'feature'"
+            BRANCH_PREFIX="feature"
+          fi
+
+          # Update the issue title with the current number
+          NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
+          NEXT_NUMBER=$((CURRENT_NUMBER + 1))
+          gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
+          echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
+          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
+          echo "NEXT_NUMBER=$NEXT_NUMBER" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Commit and push updated number
+        run: |
+          echo ${{ env.NEXT_NUMBER }} > .github/ISSUE_NUMBER.txt
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/ISSUE_NUMBER.txt
+          git commit -m "Increment issue number to ${{ env.NEXT_NUMBER }}"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  create-branch:
+    if: github.event.action == 'assigned'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize issue number file if not exists
+        run: |
+          if [ ! -f .github/ISSUE_NUMBER.txt ]; then
+            mkdir -p .github
+            echo "1" > .github/ISSUE_NUMBER.txt
+          fi
+
+      - name: Process issue title and set variables
+        id: process_title
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+
+          # Extract KMN number if it exists, otherwise assign a new one
+          if echo "$ISSUE_TITLE" | grep -q "^KMN-[0-9]\+"; then
+            KMN_NUMBER=$(echo "$ISSUE_TITLE" | sed 's/^KMN-\([0-9]\+\).*/\1/')
+            NEW_TITLE="$ISSUE_TITLE"  # Keep existing title
+          else
+            CURRENT_NUMBER=$(cat .github/ISSUE_NUMBER.txt)
+            KMN_NUMBER="$CURRENT_NUMBER"
+            NEW_TITLE="KMN-${KMN_NUMBER}: $ISSUE_TITLE"
+            NEXT_NUMBER=$((CURRENT_NUMBER + 1))
+            echo "NEXT_NUMBER=$NEXT_NUMBER" >> $GITHUB_ENV
+            gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
+          fi
+
+          # Determine branch prefix and assign labels if needed
+          if echo "$ISSUE_TITLE" | grep -iq "bug"; then
+            BRANCH_PREFIX="bugfix"
+          elif echo "$ISSUE_TITLE" | grep -iq "feature"; then
+            BRANCH_PREFIX="feature"
+          elif echo "$ISSUE_TITLE" | grep -iq "proposal"; then
+            BRANCH_PREFIX="feature"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "Proposal"
+          else
+            BRANCH_PREFIX="feature"  # Default to feature if no match
+          fi
+
+          # Format the slugged title
+          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//')
+          SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
+
+          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
+          echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
+          echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
+          echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Commit and push updated number (only if incremented)
+        if: env.NEXT_NUMBER != ''
+        run: |
+          echo ${{ env.NEXT_NUMBER }} > .github/ISSUE_NUMBER.txt
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/ISSUE_NUMBER.txt
+          git commit -m "Increment issue number to ${{ env.NEXT_NUMBER }}"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Create a new branch based on the issue number
+        run: |
+          BRANCH_NAME="${{ env.BRANCH_PREFIX }}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
+
+          # Check if the branch already exists
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Branch $BRANCH_NAME already exists, skipping"
+          else
+            git checkout -b "$BRANCH_NAME"
+            git push --set-upstream origin "$BRANCH_NAME"
+            echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Add branch link to issue
+        if: env.BRANCH_NAME != ''
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+          BRANCH_URL="${REPO_URL}/tree/${{ env.BRANCH_NAME }}"
+          gh issue comment "${{ github.event.issue.number }}" --body "Created branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
