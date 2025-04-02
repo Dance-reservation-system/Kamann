@@ -16,18 +16,16 @@ import pl.kamann.services.client.ClientAccountService;
 public class ClientAccountControler {
 
     private final ClientAccountService clientAccountService;
-    private final ClientAccountService clientAccountService;
-    ClientAccountService clientAccountService;
 
     @GetMapping
     public ResponseEntity<UserDetailsDto> getUserDetails() {
         return ResponseEntity.ok(clientAccountService.getUserDetails());
     }
 
-//    @PatchMapping
-//    public ResponseEntity<UserDetailsDto> updateUserDetails(
-//            @RequestBody() UserDetailsDto userDetailsDto
-//    ) {
-//        return ResponseEntity.ok(clientAccountService.updateUserDetails(userDetailsDto));
-//    }
+    @PatchMapping
+    public ResponseEntity<UserDetailsDto> updateUserDetails(
+            @RequestBody() UserDetailsDto userDetailsDto
+    ) {
+        return ResponseEntity.ok(clientAccountService.updateUserDetails(userDetailsDto));
+    }
 }

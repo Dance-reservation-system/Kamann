@@ -2,9 +2,15 @@ package pl.kamann.mappers;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import pl.kamann.dtos.UserDetailsDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.Role;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface UserDetailsMapper {
