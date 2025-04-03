@@ -5,6 +5,7 @@ import lombok.Builder;
 import pl.kamann.entities.event.EventDifficulty;
 import pl.kamann.entities.event.EventStatus;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Builder
@@ -52,5 +53,5 @@ public record EventDto(
 
         @NotNull
         EventDifficulty eventDifficulty
-) {
+) implements Serializable {
 }
