@@ -2,6 +2,7 @@ package pl.kamann.dtos.event;
 
 import pl.kamann.entities.event.EventStatus;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 public record EventLightDto(
@@ -11,5 +12,5 @@ public record EventLightDto(
         Integer durationMinutes,
         EventStatus status,
         String eventTypeName
-) {
+) implements Serializable {
 }
