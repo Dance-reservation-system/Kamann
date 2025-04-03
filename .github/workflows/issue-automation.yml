@@ -10,7 +10,7 @@ concurrency:
 jobs:
   number-issue:
     if: github.event.action == 'opened' && !contains(github.event.issue.title, 'proposal')
-囊    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
