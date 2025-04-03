@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   number-issue:
-    if: github.event.action == 'opened' && !contains(github.event.issue.title, 'proposal')
+    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -35,18 +35,35 @@ jobs:
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
           
-          # Assign labels and branch prefix based on the issue title
-          if echo "$ISSUE_TITLE" | grep -iq "feature"; then
+          # Determine primary prefix (feature, bug, proposal)
+          if echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
+            echo "Assigning 'proposal' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "proposal"
+            BRANCH_PREFIX="feature"
+          elif echo "$ISSUE_TITLE" | grep -iq "^feature"; then
             echo "Assigning 'feature' label"
             gh issue edit "${{ github.event.issue.number }}" --add-label "feature"
             BRANCH_PREFIX="feature"
-          elif echo "$ISSUE_TITLE" | grep -iq "bug"; then
+          elif echo "$ISSUE_TITLE" | grep -iq "^bug"; then
             echo "Assigning 'bug' label"
             gh issue edit "${{ github.event.issue.number }}" --add-label "bug"
             BRANCH_PREFIX="bugfix"
           else
-            echo "No specific label matched, defaulting to 'feature'"
+            echo "No specific prefix matched, defaulting to 'feature'"
             BRANCH_PREFIX="feature"
+          fi
+
+          # Determine second prefix (backend, frontend) and assign labels
+          if echo "$ISSUE_TITLE" | grep -iq "backend"; then
+            echo "Assigning 'backend' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "backend"
+            SECOND_PREFIX="backend"
+          elif echo "$ISSUE_TITLE" | grep -iq "frontend"; then
+            echo "Assigning 'frontend' label"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "frontend"
+            SECOND_PREFIX="frontend"
+          else
+            SECOND_PREFIX=""
           fi
 
           # Update the issue title with the current number
@@ -55,6 +72,7 @@ jobs:
           gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
+          echo "SECOND_PREFIX=$SECOND_PREFIX" >> $GITHUB_ENV
           echo "NEXT_NUMBER=$NEXT_NUMBER" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -92,7 +110,7 @@ jobs:
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
 
-          # Extract KMN number if it exists, otherwise assign a new one
+          # Extract KMN number if it exists
           if echo "$ISSUE_TITLE" | grep -q "^KMN-[0-9]\+"; then
             KMN_NUMBER=$(echo "$ISSUE_TITLE" | sed 's/^KMN-\([0-9]\+\).*/\1/')
             NEW_TITLE="$ISSUE_TITLE"  # Keep existing title
@@ -105,23 +123,39 @@ jobs:
             gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
           fi
 
-          # Determine branch prefix and assign labels if needed
-          if echo "$ISSUE_TITLE" | grep -iq "bug"; then
-            BRANCH_PREFIX="bugfix"
+          # Determine primary prefix (feature, bug, proposal)
+          if echo "$ISSUE_TITLE" | grep -iq "proposal"; then
+            BRANCH_PREFIX="feature"
           elif echo "$ISSUE_TITLE" | grep -iq "feature"; then
             BRANCH_PREFIX="feature"
-          elif echo "$ISSUE_TITLE" | grep -iq "proposal"; then
-            BRANCH_PREFIX="feature"
-            gh issue edit "${{ github.event.issue.number }}" --add-label "Proposal"
+          elif echo "$ISSUE_TITLE" | grep -iq "bug"; then
+            BRANCH_PREFIX="bugfix"
           else
             BRANCH_PREFIX="feature"  # Default to feature if no match
           fi
 
-          # Clean the title by removing KMN prefix and keywords like "feature", "bug", "proposal"
-          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E 's/\b(feature|bug|proposal)\b//gi' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
+          # Determine second prefix (backend, frontend) and assign labels/projects
+          if echo "$ISSUE_TITLE" | grep -iq "backend"; then
+            SECOND_PREFIX="backend"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "backend,todo"
+            # Add to Backend project (adjust project ID or name as needed)
+            gh project item-add --owner "${{ github.repository_owner }}" --title "Backend" --issue-id "${{ github.event.issue.node_id }}"
+          elif echo "$ISSUE_TITLE" | grep -iq "frontend"; then
+            SECOND_PREFIX="frontend"
+            gh issue edit "${{ github.event.issue.number }}" --add-label "frontend,todo"
+            # Add to Frontend project (adjust project ID or name as needed)
+            gh project item-add --owner "${{ github.repository_owner }}" --title "Frontend" --issue-id "${{ github.event.issue.node_id }}"
+          else
+            SECOND_PREFIX=""
+            gh issue edit "${{ github.event.issue.number }}" --add-label "todo"
+          fi
+
+          # Clean the title by removing KMN prefix and both prefixes (primary and second)
+          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E 's/\b(feature|bug|proposal|backend|frontend)\b//gi' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
 
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
+          echo "SECOND_PREFIX=$SECOND_PREFIX" >> $GITHUB_ENV
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
           echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
           echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
@@ -158,7 +192,6 @@ jobs:
       - name: Link branch to issue
         if: env.BRANCH_NAME != ''
         run: |
-          # Use GitHub API to link the branch to the issue
           REPO="${{ github.repository }}"
           ISSUE_NUMBER="${{ github.event.issue.number }}"
           BRANCH_NAME="${{ env.BRANCH_NAME }}"
