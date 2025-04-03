@@ -10,7 +10,7 @@ concurrency:
 jobs:
   number-issue:
     if: github.event.action == 'opened' && !contains(github.event.issue.title, 'proposal')
-    runs-on: ubuntu-latest
+囊    runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
@@ -35,6 +35,7 @@ jobs:
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
           
+          # Assign labels and branch prefix based on the issue title
           if echo "$ISSUE_TITLE" | grep -iq "feature"; then
             echo "Assigning 'feature' label"
             gh issue edit "${{ github.event.issue.number }}" --add-label "feature"
@@ -48,6 +49,7 @@ jobs:
             BRANCH_PREFIX="feature"
           fi
 
+          # Update the issue title with the current number
           NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
           NEXT_NUMBER=$((CURRENT_NUMBER + 1))
           gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
@@ -90,6 +92,7 @@ jobs:
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
 
+          # Extract KMN number if it exists, otherwise assign a new one
           if echo "$ISSUE_TITLE" | grep -q "^KMN-[0-9]\+"; then
             KMN_NUMBER=$(echo "$ISSUE_TITLE" | sed 's/^KMN-\([0-9]\+\).*/\1/')
             NEW_TITLE="$ISSUE_TITLE"  # Keep existing title
@@ -102,6 +105,7 @@ jobs:
             gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
           fi
 
+          # Determine branch prefix and assign labels if needed
           if echo "$ISSUE_TITLE" | grep -iq "bug"; then
             BRANCH_PREFIX="bugfix"
           elif echo "$ISSUE_TITLE" | grep -iq "feature"; then
@@ -113,6 +117,7 @@ jobs:
             BRANCH_PREFIX="feature"  # Default to feature if no match
           fi
 
+          # Clean the title by removing KMN prefix and keywords like "feature", "bug", "proposal"
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E 's/\b(feature|bug|proposal)\b//gi' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
 
@@ -139,6 +144,7 @@ jobs:
         run: |
           BRANCH_NAME="${{ env.BRANCH_PREFIX }}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
 
+          # Check if the branch already exists
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
             echo "Branch $BRANCH_NAME already exists, skipping"
           else
@@ -149,11 +155,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
+      - name: Link branch to issue
+        if: env.BRANCH_NAME != ''
+        run: |
+          # Use GitHub API to link the branch to the issue
+          REPO="${{ github.repository }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          BRANCH_NAME="${{ env.BRANCH_NAME }}"
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER" \
+            -d "{\"branch\": \"$BRANCH_NAME\"}"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
       - name: Add branch link to issue
         if: env.BRANCH_NAME != ''
         run: |
           REPO_URL="https://github.com/${{ github.repository }}"
           BRANCH_URL="${REPO_URL}/tree/${{ env.BRANCH_NAME }}"
-          gh issue comment "${{ github.event.issue.number }}" --body "Created branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
+          gh issue comment "${{ github.event.issue.number }}" --body "Created and linked branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
