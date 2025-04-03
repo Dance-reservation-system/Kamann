@@ -10,6 +10,8 @@ import pl.kamann.repositories.EventRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+//TODO to remove
+
 @RestController
 @RequestMapping("/admin/v1/occurrence")
 @RequiredArgsConstructor
@@ -32,7 +34,7 @@ public class OccurrenceEventGeneratorController {
         } else {
             until = LocalDateTime.now().plusMonths(2);
         }
-        generatorService.generateOccurrencesForEvent(event, until);
+        generatorService.createOccurrencesForEvent(event, until);
         return ResponseEntity.ok().build();
     }
 }
