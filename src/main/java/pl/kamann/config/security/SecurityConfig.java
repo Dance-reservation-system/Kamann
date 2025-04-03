@@ -64,7 +64,8 @@ public class SecurityConfig {
             "/api/v1/client/events/**",
             "/api/v1/client/attendance/**",
             "/api/v1/client/occurrences/**",
-            "/api/v1/client/membership-cards/**"
+            "/api/v1/client/membership-cards/**",
+            "/api/v1/client/account"
     };
 
     @Bean
