@@ -35,26 +35,30 @@ jobs:
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
           
-          # Determine primary prefix (feature, bug, proposal)
+          # Determine primary prefix (feature, bug, proposal) and clean title
           if echo "$ISSUE_TITLE" | grep -iq "^feature"; then
             echo "Assigning 'feature' label"
             gh issue edit "${{ github.event.issue.number }}" --add-label "feature"
             BRANCH_PREFIX="feature"
+            CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/\b(feature)\b//gi' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
           elif echo "$ISSUE_TITLE" | grep -iq "^bug"; then
             echo "Assigning 'bug' label"
             gh issue edit "${{ github.event.issue.number }}" --add-label "bug"
             BRANCH_PREFIX="bugfix"
+            CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/\b(bug)\b//gi' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
           elif echo "$ISSUE_TITLE" | grep -iq "^proposal"; then
             echo "Assigning 'proposal' label"
             gh issue edit "${{ github.event.issue.number }}" --add-label "proposal"
             BRANCH_PREFIX="feature"
+            CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/\b(proposal)\b//gi' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
           else
             echo "No specific prefix matched, defaulting to 'feature'"
             BRANCH_PREFIX="feature"
+            CLEAN_TITLE="$ISSUE_TITLE"
           fi
 
-          # Update the issue title with the current number
-          NEW_TITLE="KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
+          # Update the issue title with the current number and cleaned title
+          NEW_TITLE="KMN-${CURRENT_NUMBER}: $CLEAN_TITLE"
           NEXT_NUMBER=$((CURRENT_NUMBER + 1))
           gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
@@ -109,7 +113,7 @@ jobs:
             gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
           fi
 
-          # Determine branch prefix (feature, bug, proposal)
+          # Determine branch prefix and add todo label
           if echo "$ISSUE_TITLE" | grep -iq "feature"; then
             BRANCH_PREFIX="feature"
             gh issue edit "${{ github.event.issue.number }}" --add-label "todo"
