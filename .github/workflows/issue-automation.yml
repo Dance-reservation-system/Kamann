@@ -116,8 +116,8 @@ jobs:
       - name: Add branch link to issue
         if: env.BRANCH_NAME != ''
         run: |
-          REPO_URL="https://github.com/${{ github.repository }}"
-          BRANCH_URL="${REPO_URL}/tree/${{ env.BRANCH_NAME }}"
+          REPO_URL=https://github.com/${{ github.repository }}
+          BRANCH_URL=${REPO_URL}/tree/${{ env.BRANCH_NAME }}
           gh issue comment "$ISSUE_NUMBER" --body "Created and linked branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
