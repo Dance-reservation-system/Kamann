@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -35,10 +36,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final HandlerExceptionResolver exceptionResolver;
+    private final CustomOAuth2SuccessHandler successHandler;
 
     @Autowired
-    public SecurityConfig(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+    public SecurityConfig(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver, CustomOAuth2SuccessHandler successHandler) {
         this.exceptionResolver = exceptionResolver;
+        this.successHandler = successHandler;
     }
 
     private static final String[] PUBLIC_URLS = {
@@ -51,7 +54,9 @@ public class SecurityConfig {
             "/api/v1/auth/refresh-token",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/oauth2/**",
+            "/login/oauth2/**"
     };
 
     private static final String[] ADMIN_URLS = {
@@ -93,6 +98,9 @@ public class SecurityConfig {
                         .requestMatchers(ADMIN_URLS).hasRole("ADMIN")
                         .requestMatchers(CLIENT_URLS).hasAnyRole("CLIENT", "ADMIN")
                         .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(successHandler)
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
