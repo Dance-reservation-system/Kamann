@@ -1,7 +1,7 @@
 name: Issue Automation
 on:
   issues:
-    types: [opened, assigned]
+    types: [opened, assigned, reopened]
 
 concurrency:
   group: issue-automation-${{ github.event.issue.number }}
