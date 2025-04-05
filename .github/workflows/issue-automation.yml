@@ -89,8 +89,8 @@ jobs:
           esac
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
-          # Add 'todo' label only
-          gh issue edit "$ISSUE_NUMBER" --add-label "todo"
+          # Add 'to do' label only
+          gh issue edit "$ISSUE_NUMBER" --add-label "to do"
 
           # Clean the title and prepare a slugged version
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
