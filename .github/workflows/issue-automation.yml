@@ -39,10 +39,6 @@ jobs:
           echo "TYPE_LABEL=$TYPE_LABEL"
           echo "BRANCH_PREFIX=$BRANCH_PREFIX"
 
-          # Add type label to the issue with explicit repo context
-          gh issue edit "$ISSUE_NUMBER" --add-label "$TYPE_LABEL" --repo "${{ github.repository }}" || { echo "Failed to add label $TYPE_LABEL to issue #$ISSUE_NUMBER"; exit 1; }
-          echo "Label added successfully"
-
           # Clean the title by removing any old KMN-XXX or text prefix
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/^KMN-[0-9]+[[:space:]]*[:]*[[:space:]]*//i' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           echo "CLEAN_TITLE=$CLEAN_TITLE"
