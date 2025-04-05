@@ -50,12 +50,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Add initial comment
-        run: |
-          gh issue comment "$ISSUE_NUMBER" --body "Issue processed and titled as ${{ env.NEW_TITLE }}. Awaiting assignment for branch creation."
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
   create-branch:
     if: github.event.action == 'assigned'
     runs-on: ubuntu-latest
@@ -96,7 +90,7 @@ jobs:
           esac
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
-          # Ensure the label is applied (in case it was missed or changed)
+          # Ensure the label is applied
           gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL,todo"
 
           # Clean the title and prepare a slugged version
@@ -139,13 +133,6 @@ jobs:
         run: |
           REPO_URL="https://github.com/${{ github.repository }}"
           BRANCH_URL="${REPO_URL}/tree/${{ env.BRANCH_NAME }}"
-          gh issue comment "$ISSUE_NUMBER" --body "Created and linked branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}. Work can now begin!"
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-      - name: Notify assignee
-        if: env.BRANCH_NAME != ''
-        run: |
-          gh issue comment "$ISSUE_NUMBER" --body "@${{ github.event.assignee.login }}, you've been assigned to this issue. Branch [$BRANCH_NAME] is ready for your changes."
+          gh issue comment "$ISSUE_NUMBER" --body "Created and linked branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
