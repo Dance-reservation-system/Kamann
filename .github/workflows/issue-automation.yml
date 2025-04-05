@@ -22,18 +22,18 @@ jobs:
           # Extract potential prefix (case-insensitive) from the start
           RAW_PREFIX=$(echo "$ISSUE_TITLE" | grep -oE '^[a-zA-Z]+' | tr '[:upper:]' '[:lower:]' || echo "")
 
-          # Map prefix to label and branch prefix
+          # Map prefix to type label and branch prefix
           case "$RAW_PREFIX" in
             bug|fix)
-              LABEL="bug"; BRANCH_PREFIX="bugfix";;
+              TYPE_LABEL="type:bug"; BRANCH_PREFIX="bugfix";;
             feature|enhancement|proposal)
-              LABEL="feature"; BRANCH_PREFIX="feature";;
+              TYPE_LABEL="type:feature"; BRANCH_PREFIX="feature";;
             *)
-              LABEL="feature"; BRANCH_PREFIX="feature";;
+              TYPE_LABEL="type:feature"; BRANCH_PREFIX="feature";;
           esac
 
-          # Add label to the issue
-          gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL"
+          # Add type label to the issue
+          gh issue edit "$ISSUE_NUMBER" --add-label "$TYPE_LABEL"
 
           # Clean the title by removing any old KMN-XXX or text prefix
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/^KMN-[0-9]+[[:space:]]*[:]*[[:space:]]*//i' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -71,19 +71,19 @@ jobs:
           # Extract potential prefix (case-insensitive)
           RAW_PREFIX=$(echo "$ISSUE_TITLE" | grep -oE '^[a-zA-Z]+' | tr '[:upper:]' '[:lower:]' || echo "")
 
-          # Determine branch prefix and label
+          # Determine branch prefix (no type label here, handled by number-issue)
           case "$RAW_PREFIX" in
             bug|fix)
-              BRANCH_PREFIX="bugfix"; LABEL="bug";;
+              BRANCH_PREFIX="bugfix";;
             feature|enhancement|proposal)
-              BRANCH_PREFIX="feature"; LABEL="feature";;
+              BRANCH_PREFIX="feature";;
             *)
-              BRANCH_PREFIX="feature"; LABEL="feature";;
+              BRANCH_PREFIX="feature";;
           esac
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
-          # Ensure the label is applied
-          gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL,todo"
+          # Add 'todo' label only
+          gh issue edit "$ISSUE_NUMBER" --add-label "todo"
 
           # Clean the title and prepare a slugged version
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
