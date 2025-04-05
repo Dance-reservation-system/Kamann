@@ -30,9 +30,9 @@ jobs:
           # Map prefix to type label and branch prefix
           case "$RAW_PREFIX" in
             bug|fix)
-              TYPE_LABEL="type:bug"; BRANCH_PREFIX="bugfix";;
+              TYPE_LABEL="type:Bug"; BRANCH_PREFIX="bugfix";;
             feature|enhancement|proposal)
-              TYPE_LABEL="type:feature"; BRANCH_PREFIX="feature";;
+              TYPE_LABEL="type:Feature"; BRANCH_PREFIX="feature";;
             *)
               TYPE_LABEL="type:feature"; BRANCH_PREFIX="feature";;
           esac
