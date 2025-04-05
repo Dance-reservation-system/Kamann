@@ -39,8 +39,8 @@ jobs:
           echo "TYPE_LABEL=$TYPE_LABEL"
           echo "BRANCH_PREFIX=$BRANCH_PREFIX"
 
-          # Add type label to the issue
-          gh issue edit "$ISSUE_NUMBER" --add-label "$TYPE_LABEL" || { echo "Failed to add label $TYPE_LABEL to issue #$ISSUE_NUMBER"; exit 1; }
+          # Add type label to the issue with explicit repo context
+          gh issue edit "$ISSUE_NUMBER" --add-label "$TYPE_LABEL" --repo "${{ github.repository }}" || { echo "Failed to add label $TYPE_LABEL to issue #$ISSUE_NUMBER"; exit 1; }
           echo "Label added successfully"
 
           # Clean the title by removing any old KMN-XXX or text prefix
@@ -53,8 +53,8 @@ jobs:
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
-          # Apply the new title to the issue
-          gh issue edit "$ISSUE_NUMBER" --title "$NEW_TITLE" || { echo "Failed to update title to $NEW_TITLE for issue #$ISSUE_NUMBER"; exit 1; }
+          # Apply the new title to the issue with explicit repo context
+          gh issue edit "$ISSUE_NUMBER" --title "$NEW_TITLE" --repo "${{ github.repository }}" || { echo "Failed to update title to $NEW_TITLE for issue #$ISSUE_NUMBER"; exit 1; }
           echo "Title updated successfully"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
