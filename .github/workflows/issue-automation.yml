@@ -24,12 +24,10 @@ jobs:
 
           # Map prefix to label and branch prefix
           case "$RAW_PREFIX" in
-            fix|bug)
+            bug|fix)
               LABEL="bug"; BRANCH_PREFIX="bugfix";;
-            feature|enhancement)
+            feature|enhancement|proposal)
               LABEL="feature"; BRANCH_PREFIX="feature";;
-            proposal)
-              LABEL="proposal"; BRANCH_PREFIX="feature";;
             *)
               LABEL="feature"; BRANCH_PREFIX="feature";;
           esac
@@ -37,10 +35,10 @@ jobs:
           # Add label to the issue
           gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL"
 
-          # Clean the title by removing the prefix
-          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          # Clean the title by removing any old KMN-XXX or text prefix
+          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/^KMN-[0-9]+[[:space:]]*[:]*[[:space:]]*//i' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
-          # Update title with KMN-{issue_number} prefix
+          # Update title with KMN-<GitHub issue number> prefix
           NEW_TITLE="KMN-$ISSUE_NUMBER: $CLEAN_TITLE"
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
@@ -66,14 +64,8 @@ jobs:
           ISSUE_TITLE="${{ github.event.issue.title }}"
           ISSUE_NUMBER="${{ github.event.issue.number }}"
 
-          # Extract KMN number from title or use GitHub issue number
-          if echo "$ISSUE_TITLE" | grep -q "^KMN-[0-9]\+"; then
-            KMN_NUMBER=$(echo "$ISSUE_TITLE" | sed 's/^KMN-\([0-9]\+\).*/\1/')
-          else
-            KMN_NUMBER="$ISSUE_NUMBER"
-            NEW_TITLE="KMN-$KMN_NUMBER: $ISSUE_TITLE"
-            gh issue edit "$ISSUE_NUMBER" --title "$NEW_TITLE"
-          fi
+          # Use GitHub issue number directly
+          KMN_NUMBER="$ISSUE_NUMBER"
           echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
 
           # Extract potential prefix (case-insensitive)
@@ -81,7 +73,7 @@ jobs:
 
           # Determine branch prefix and label
           case "$RAW_PREFIX" in
-            fix|bug)
+            bug|fix)
               BRANCH_PREFIX="bugfix"; LABEL="bug";;
             feature|enhancement|proposal)
               BRANCH_PREFIX="feature"; LABEL="feature";;
@@ -111,20 +103,6 @@ jobs:
             git push --set-upstream origin "$BRANCH_NAME"
             echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-      - name: Link branch to issue
-        if: env.BRANCH_NAME != ''
-        run: |
-          REPO="${{ github.repository }}"
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          BRANCH_NAME="${{ env.BRANCH_NAME }}"
-          curl -X PATCH \
-            -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER" \
-            -d "{\"branch\": \"$BRANCH_NAME\"}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
