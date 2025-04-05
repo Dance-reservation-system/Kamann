@@ -16,11 +16,16 @@ jobs:
     steps:
       - name: Process issue title and assign labels
         run: |
+          set -x  # Enable command tracing
           ISSUE_TITLE="${{ github.event.issue.title }}"
           ISSUE_NUMBER="${{ github.event.issue.number }}"
 
+          echo "ISSUE_TITLE=$ISSUE_TITLE"
+          echo "ISSUE_NUMBER=$ISSUE_NUMBER"
+
           # Extract potential prefix (case-insensitive) from the start
           RAW_PREFIX=$(echo "$ISSUE_TITLE" | grep -oE '^[a-zA-Z]+' | tr '[:upper:]' '[:lower:]' || echo "")
+          echo "RAW_PREFIX=$RAW_PREFIX"
 
           # Map prefix to type label and branch prefix
           case "$RAW_PREFIX" in
@@ -31,20 +36,26 @@ jobs:
             *)
               TYPE_LABEL="type:feature"; BRANCH_PREFIX="feature";;
           esac
+          echo "TYPE_LABEL=$TYPE_LABEL"
+          echo "BRANCH_PREFIX=$BRANCH_PREFIX"
 
           # Add type label to the issue
-          gh issue edit "$ISSUE_NUMBER" --add-label "$TYPE_LABEL"
+          gh issue edit "$ISSUE_NUMBER" --add-label "$TYPE_LABEL" || { echo "Failed to add label $TYPE_LABEL to issue #$ISSUE_NUMBER"; exit 1; }
+          echo "Label added successfully"
 
           # Clean the title by removing any old KMN-XXX or text prefix
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/^KMN-[0-9]+[[:space:]]*[:]*[[:space:]]*//i' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          echo "CLEAN_TITLE=$CLEAN_TITLE"
 
           # Update title with KMN-<GitHub issue number> prefix
           NEW_TITLE="KMN-$ISSUE_NUMBER: $CLEAN_TITLE"
+          echo "NEW_TITLE=$NEW_TITLE"
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
           # Apply the new title to the issue
-          gh issue edit "$ISSUE_NUMBER" --title "$NEW_TITLE"
+          gh issue edit "$ISSUE_NUMBER" --title "$NEW_TITLE" || { echo "Failed to update title to $NEW_TITLE for issue #$ISSUE_NUMBER"; exit 1; }
+          echo "Title updated successfully"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
