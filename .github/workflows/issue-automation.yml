@@ -1,7 +1,12 @@
 name: Issue Automation
+
 on:
   issues:
     types: [opened, assigned, reopened]
+
+concurrency:
+  group: issue-automation-${{ github.event.issue.number }}
+  cancel-in-progress: false
 
 jobs:
   number-issue:
@@ -14,24 +19,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Initialize issue number file if not exists
-        run: |
-          mkdir -p .github
-          if [ ! -f .github/ISSUE_NUMBER.txt ]; then
-            echo "1" > .github/ISSUE_NUMBER.txt
-          fi
-
-      - name: Read current issue number
-        id: issue_number
-        run: |
-          CURRENT_NUMBER=$(cat .github/ISSUE_NUMBER.txt)
-          echo "CURRENT_NUMBER=$CURRENT_NUMBER" >> $GITHUB_ENV
-
       - name: Process issue title and assign labels
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
 
-          # Map prefix aliases
+          # Map prefix aliases to determine labels and branch prefix
           RAW_PREFIX=$(echo "$ISSUE_TITLE" | awk '{print tolower($1)}')
           case "$RAW_PREFIX" in
             fix)
@@ -48,32 +40,18 @@ jobs:
               LABEL="feature"; BRANCH_PREFIX="feature";;
           esac
 
-          echo "LABEL=$LABEL" >> $GITHUB_ENV
-          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
-
+          # Add label to the issue
           gh issue edit "${{ github.event.issue.number }}" --add-label "$LABEL"
 
-          # Clean the title by removing prefix
+          # Clean the title by removing any prefix
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E "s/^($RAW_PREFIX)//i" | sed 's/^: *//;s/^ *//;s/ *$//')
 
-          NEW_TITLE="KMN-${CURRENT_NUMBER}: $CLEAN_TITLE"
+          # Update title with KMN-{issue_number} prefix
+          NEW_TITLE="KMN-${{ github.event.issue.number }}: $CLEAN_TITLE"
           echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
-          echo "NEXT_NUMBER=$((CURRENT_NUMBER + 1))" >> $GITHUB_ENV
-          echo "SHOULD_COMMIT=true" >> $GITHUB_ENV
 
+          # Apply the new title to the issue
           gh issue edit "${{ github.event.issue.number }}" --title "$NEW_TITLE"
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-      - name: Commit and push updated number if needed
-        if: env.SHOULD_COMMIT == 'true'
-        run: |
-          echo ${{ env.NEXT_NUMBER }} > .github/ISSUE_NUMBER.txt
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/ISSUE_NUMBER.txt
-          git commit -m "Increment issue number to ${{ env.NEXT_NUMBER }}"
-          git push
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -87,29 +65,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Initialize issue number file if not exists
-        run: |
-          mkdir -p .github
-          if [ ! -f .github/ISSUE_NUMBER.txt ]; then
-            echo "1" > .github/ISSUE_NUMBER.txt
-          fi
-
       - name: Process issue title and set variables
         id: process_title
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
 
+          # Extract KMN number from title or use GitHub issue number
           if echo "$ISSUE_TITLE" | grep -q "^KMN-[0-9]\+"; then
             KMN_NUMBER=$(echo "$ISSUE_TITLE" | sed 's/^KMN-\([0-9]\+\).*/\1/')
             echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
           else
-            CURRENT_NUMBER=$(cat .github/ISSUE_NUMBER.txt)
-            echo "KMN_NUMBER=$CURRENT_NUMBER" >> $GITHUB_ENV
-            echo "NEXT_NUMBER=$((CURRENT_NUMBER + 1))" >> $GITHUB_ENV
-            echo "SHOULD_COMMIT=true" >> $GITHUB_ENV
-            gh issue edit "${{ github.event.issue.number }}" --title "KMN-${CURRENT_NUMBER}: $ISSUE_TITLE"
+            KMN_NUMBER="${{ github.event.issue.number }}"
+            echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
           fi
 
+          # Determine branch prefix based on the title
           RAW_PREFIX=$(echo "$ISSUE_TITLE" | awk '{print tolower($1)}')
           case "$RAW_PREFIX" in
             fix|bug)
@@ -120,25 +90,13 @@ jobs:
               BRANCH_PREFIX="feature";;
           esac
 
-          gh issue edit "${{ github.event.issue.number }}" --add-label "todo"
+          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
+          # Clean the title and prepare a slugged version for the branch name
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E 's/^($RAW_PREFIX)//i' | sed 's/^ *//;s/ *$//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
 
-          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
           echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-      - name: Commit and push updated number if needed
-        if: env.SHOULD_COMMIT == 'true'
-        run: |
-          echo ${{ env.NEXT_NUMBER }} > .github/ISSUE_NUMBER.txt
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/ISSUE_NUMBER.txt
-          git commit -m "Increment issue number to ${{ env.NEXT_NUMBER }}"
-          git push
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
