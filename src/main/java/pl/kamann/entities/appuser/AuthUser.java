@@ -29,8 +29,12 @@ public class AuthUser implements UserDetails, Serializable {
     @Email
     private String email;
 
-    @Column(nullable = false)
+    @Column
     private String password;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private LoginProvider loginProvider;
 
     private boolean enabled = false;
 

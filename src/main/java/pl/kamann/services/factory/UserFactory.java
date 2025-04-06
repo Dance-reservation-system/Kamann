@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AuthUser;
-import pl.kamann.entities.appuser.AuthUserStatus;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.*;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -22,6 +19,7 @@ public class UserFactory {
         AuthUser authUser = AuthUser.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
+                .loginProvider(LoginProvider.LOCAL)
                 .roles(Set.of(role))
                 .status(AuthUserStatus.PENDING)
                 .enabled(false)

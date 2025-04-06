@@ -31,8 +31,6 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.factory.UserFactory;
 
-import java.time.LocalDateTime;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -62,6 +60,12 @@ public class AuthService {
             );
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
+
+            if(authUser.getLoginProvider().equals(LoginProvider.GOOGLE)) {
+                throw new ApiException("Login with Google is not supported.",
+                        HttpStatus.UNAUTHORIZED,
+                        AuthCodes.LOGIN_WITH_GOOGLE.name());
+            }
 
             if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
                 scheduledTaskService.cancelTask(authUser.getEmail());
@@ -119,7 +123,7 @@ public class AuthService {
         return cookie;
     }
 
-    private Cookie setCookie(String refreshToken) {
+    public Cookie setCookie(String refreshToken) {
         return createCookie(refreshToken, 60 * 60 * 24);
     }
 

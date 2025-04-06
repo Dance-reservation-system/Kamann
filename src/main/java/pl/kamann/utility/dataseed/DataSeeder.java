@@ -7,10 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.exception.services.UserLookupService;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AuthUser;
-import pl.kamann.entities.appuser.AuthUserStatus;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
@@ -72,16 +69,16 @@ public class DataSeeder {
     }
 
     private void createDefaultAdminAndClient() {
-        createUser("studiokamann@gmail.com", "Admin", "Admin", Set.of(adminRole));
-        client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole));
+        createUser("studiokamann@gmail.com", "Admin", "Admin", Set.of(adminRole), LoginProvider.ALL);
+        client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole), LoginProvider.LOCAL);
     }
 
     private void createInstructors() {
         List<AppUser> instructors = Arrays.asList(
-                createUser("instructor1@yoga.com", "Jane", "Doe", Set.of(instructorRole)),
-                createUser("instructor2@yoga.com", "John", "Smith", Set.of(instructorRole)),
-                createUser("instructor3@yoga.com", "Mary", "White", Set.of(instructorRole)),
-                createUser("instructor4@yoga.com", "Lucas", "Brown", Set.of(instructorRole))
+                createUser("instructor1@yoga.com", "Jane", "Doe", Set.of(instructorRole), LoginProvider.LOCAL),
+                createUser("instructor2@yoga.com", "John", "Smith", Set.of(instructorRole), LoginProvider.LOCAL),
+                createUser("instructor3@yoga.com", "Mary", "White", Set.of(instructorRole), LoginProvider.LOCAL),
+                createUser("instructor4@yoga.com", "Lucas", "Brown", Set.of(instructorRole), LoginProvider.LOCAL)
         );
 
         appUserRepository.saveAll(instructors);
@@ -90,14 +87,15 @@ public class DataSeeder {
     private void createClients() {
         IntStream.range(2, 5)
                 .forEach(i -> {
-                    createUser("client" + i + "@client.com", "Client" + i, "Test", Set.of(clientRole));
+                    createUser("client" + i + "@client.com", "Client" + i, "Test", Set.of(clientRole), LoginProvider.LOCAL);
                 });
     }
 
-    private AuthUser createAuthUser(String email, Set<Role> role) {
+    private AuthUser createAuthUser(String email, Set<Role> role, LoginProvider loginProvider) {
         return authUserRepository.save(AuthUser.builder()
                 .email(email)
                 .password(passwordEncoder.encode("admin"))
+                .loginProvider(loginProvider)
                 .status(AuthUserStatus.ACTIVE)
                 .enabled(true)
                 .roles(role)
@@ -112,8 +110,8 @@ public class DataSeeder {
                 .build());
     }
 
-    private AppUser createUser(String email, String firstName, String lastName, Set<Role> roles) {
-        AuthUser authUser = createAuthUser(email, roles);
+    private AppUser createUser(String email, String firstName, String lastName, Set<Role> roles, LoginProvider loginProvider) {
+        AuthUser authUser = createAuthUser(email, roles, loginProvider);
         return createAppUser(firstName, lastName, authUser);
     }
 
