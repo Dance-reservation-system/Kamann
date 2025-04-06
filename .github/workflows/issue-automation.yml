@@ -89,9 +89,6 @@ jobs:
           esac
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
-          # Add 'to do' label only
-          gh issue edit "$ISSUE_NUMBER" --add-label "to do"
-
           # Clean the title and prepare a slugged version
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
@@ -103,6 +100,7 @@ jobs:
         run: |
           BRANCH_NAME="${{ env.BRANCH_PREFIX }}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
 
+          # Check if the branch exists remotely
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
             echo "Branch $BRANCH_NAME already exists, skipping"
           else
@@ -114,10 +112,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Add branch link to issue
-        if: env.BRANCH_NAME != ''
+        if: env.BRANCH_NAME != '' && github.event.issue.number != ''
         run: |
           REPO_URL=https://github.com/${{ github.repository }}
           BRANCH_URL=${REPO_URL}/tree/${{ env.BRANCH_NAME }}
+          
+          # Debugging: Log values to check if they're correct
+          echo "Branch Name: $BRANCH_NAME"
+          echo "Issue Number: $ISSUE_NUMBER"
+
+          # Check if the issue number is set and not empty
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "Error: ISSUE_NUMBER is empty."
+            exit 1
+          fi
+
+          # Post the comment with the correct URL
           gh issue comment "$ISSUE_NUMBER" --body "Created and linked branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
