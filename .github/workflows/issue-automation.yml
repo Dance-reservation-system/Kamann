@@ -96,14 +96,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Add branch link to issue
+      - name: Add branch link to issue and connect
+        if: env.BRANCH_NAME != '' && github.event.issue.number != ''
         run: |
           REPO_URL=https://github.com/${{ github.repository }}
           BRANCH_URL=${REPO_URL}/tree/${{ env.BRANCH_NAME }}
-
+      
           echo "Branch Name: $BRANCH_NAME"
-          echo "Issue Number: ${{ github.event.issue.number }}"
-
-          gh issue comment "${{ github.event.issue.number }}" --body "Created and linked branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
+          echo "Issue Number: $ISSUE_NUMBER"
+      
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "Error: ISSUE_NUMBER is empty."
+            exit 1
+          fi
+      
+          # Post comment
+          gh issue comment "$ISSUE_NUMBER" --body "🔗 Branch created: [$BRANCH_NAME]($BRANCH_URL) for @${{ github.event.assignee.login }}"
+      
+          # Try to link the branch to the issue (this works if GitHub CLI is up to date and repo supports it)
+          gh issue develop "$ISSUE_NUMBER" --repo "${{ github.repository }}" --branch "$BRANCH_NAME" || echo "Warning: couldn't formally connect the branch to the issue. Smart linking may still apply."
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
