@@ -16,18 +16,16 @@ jobs:
     steps:
       - name: Process issue title and assign labels
         run: |
-          set -x  # Enable command tracing
+          set -x
           ISSUE_TITLE="${{ github.event.issue.title }}"
           ISSUE_NUMBER="${{ github.event.issue.number }}"
 
           echo "ISSUE_TITLE=$ISSUE_TITLE"
           echo "ISSUE_NUMBER=$ISSUE_NUMBER"
 
-          # Extract potential prefix (case-insensitive) from the start
           RAW_PREFIX=$(echo "$ISSUE_TITLE" | grep -oE '^[a-zA-Z]+' | tr '[:upper:]' '[:lower:]' || echo "")
           echo "RAW_PREFIX=$RAW_PREFIX"
 
-          # Map prefix to type label and branch prefix
           case "$RAW_PREFIX" in
             bug|fix)
               TYPE_LABEL="type:Bug"; BRANCH_PREFIX="bugfix";;
@@ -36,20 +34,13 @@ jobs:
             *)
               TYPE_LABEL="type:feature"; BRANCH_PREFIX="feature";;
           esac
-          echo "TYPE_LABEL=$TYPE_LABEL"
-          echo "BRANCH_PREFIX=$BRANCH_PREFIX"
 
-          # Clean the title by removing any old KMN-XXX or text prefix
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/^KMN-[0-9]+[[:space:]]*[:]*[[:space:]]*//i' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-          echo "CLEAN_TITLE=$CLEAN_TITLE"
-
-          # Update title with KMN-<GitHub issue number> prefix
           NEW_TITLE="KMN-$ISSUE_NUMBER: $CLEAN_TITLE"
+
           echo "NEW_TITLE=$NEW_TITLE"
-          echo "NEW_TITLE=$NEW_TITLE" >> $GITHUB_ENV
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
-          # Apply the new title to the issue with explicit repo context
           gh issue edit "$ISSUE_NUMBER" --title "$NEW_TITLE" --repo "${{ github.repository }}" || { echo "Failed to update title to $NEW_TITLE for issue #$ISSUE_NUMBER"; exit 1; }
           echo "Title updated successfully"
         env:
@@ -61,25 +52,20 @@ jobs:
     permissions:
       contents: write
       issues: write
-    needs: number-issue  # Ensure that this job runs after `number-issue`
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Process issue title and set variables
-        id: process_title
         run: |
           ISSUE_TITLE="${{ github.event.issue.title }}"
           ISSUE_NUMBER="${{ github.event.issue.number }}"
 
-          # Use GitHub issue number directly
           KMN_NUMBER="$ISSUE_NUMBER"
           echo "KMN_NUMBER=$KMN_NUMBER" >> $GITHUB_ENV
 
-          # Extract potential prefix (case-insensitive)
           RAW_PREFIX=$(echo "$ISSUE_TITLE" | grep -oE '^[a-zA-Z]+' | tr '[:upper:]' '[:lower:]' || echo "")
 
-          # Determine branch prefix (no type label here, handled by number-issue)
           case "$RAW_PREFIX" in
             bug|fix)
               BRANCH_PREFIX="bugfix";;
@@ -90,7 +76,6 @@ jobs:
           esac
           echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
 
-          # Clean the title and prepare a slugged version
           CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
           echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
@@ -101,7 +86,6 @@ jobs:
         run: |
           BRANCH_NAME="${{ env.BRANCH_PREFIX }}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
 
-          # Check if the branch exists remotely
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
             echo "Branch $BRANCH_NAME already exists, skipping"
           else
@@ -113,22 +97,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Add branch link to issue
-        if: env.BRANCH_NAME != '' && github.event.issue.number != ''
         run: |
           REPO_URL=https://github.com/${{ github.repository }}
           BRANCH_URL=${REPO_URL}/tree/${{ env.BRANCH_NAME }}
-          
-          # Debugging: Log values to check if they're correct
+
           echo "Branch Name: $BRANCH_NAME"
-          echo "Issue Number: $ISSUE_NUMBER"
+          echo "Issue Number: ${{ github.event.issue.number }}"
 
-          # Check if the issue number is set and not empty
-          if [ -z "$ISSUE_NUMBER" ]; then
-            echo "Error: ISSUE_NUMBER is empty."
-            exit 1
-          fi
-
-          # Post the comment with the correct URL
-          gh issue comment "$ISSUE_NUMBER" --body "Created and linked branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
+          gh issue comment "${{ github.event.issue.number }}" --body "Created and linked branch: [$BRANCH_NAME]($BRANCH_URL) for assignee @${{ github.event.assignee.login }}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
