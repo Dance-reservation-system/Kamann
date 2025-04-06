@@ -61,6 +61,7 @@ jobs:
     permissions:
       contents: write
       issues: write
+    needs: number-issue  # Ensure that this job runs after `number-issue`
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
