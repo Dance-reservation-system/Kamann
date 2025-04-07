@@ -15,15 +15,36 @@ public class UserFactory {
 
     private final PasswordEncoder passwordEncoder;
 
-    public AuthUser createAndLinkAuthWithApp(RegisterRequest request, Role role, AppUser appUser) {
-        AuthUser authUser = AuthUser.builder()
-                .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
-                .loginProvider(LoginProvider.LOCAL)
-                .roles(Set.of(role))
-                .status(AuthUserStatus.PENDING)
-                .enabled(false)
+    private AppUser createAppUser(String firstName, String lastName) {
+        return AppUser.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .createdAt(LocalDateTime.now())
                 .build();
+    }
+
+    private AppUser createAppUserWithPhone(RegisterRequest request) {
+        AppUser appuser = createAppUser(request.firstName(), request.lastName());
+        appuser.setPhone(request.phone());
+
+        return appuser;
+    }
+
+    private AuthUser buildAuthUser(String email, LoginProvider loginProvider, Role role, AuthUserStatus status, boolean enabled) {
+        return AuthUser.builder()
+                .email(email)
+                .loginProvider(loginProvider)
+                .roles(Set.of(role))
+                .status(status)
+                .enabled(enabled)
+                .build();
+    }
+
+    public AuthUser createAuthUserWithPasswordAndLinkToAppUser(RegisterRequest request, Role role) {
+        AppUser appUser = createAppUserWithPhone(request);
+
+        AuthUser authUser = buildAuthUser(request.email(), LoginProvider.LOCAL, role, AuthUserStatus.PENDING, false);
+        authUser.setPassword(passwordEncoder.encode(request.password()));
 
         authUser.setAppUser(appUser);
         appUser.setAuthUser(authUser);
@@ -31,12 +52,14 @@ public class UserFactory {
         return authUser;
     }
 
-    public AppUser createAppUser(RegisterRequest request) {
-        return AppUser.builder()
-                        .firstName(request.firstName())
-                        .lastName(request.lastName())
-                        .createdAt(LocalDateTime.now())
-                        .phone(request.phone())
-                        .build();
+    public AuthUser createAuthUserWithOAuthAndLinkToAppUser(String email, String firstName, String lastName, Role role) {
+        AppUser appUser = createAppUser(firstName, lastName);
+
+        AuthUser authUser = buildAuthUser(email, LoginProvider.GOOGLE, role, AuthUserStatus.ACTIVE, true);
+
+        authUser.setAppUser(appUser);
+        appUser.setAuthUser(authUser);
+
+        return authUser;
     }
 }

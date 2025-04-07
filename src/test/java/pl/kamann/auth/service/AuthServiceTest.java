@@ -111,6 +111,7 @@ class AuthServiceTest {
         AuthUser user = AuthUser.builder()
                 .email(loginRequest.email())
                 .password("encodedPassword")
+                .loginProvider(LoginProvider.LOCAL)
                 .roles(Set.of(clientRole))
                 .enabled(true)
                 .build();
@@ -276,8 +277,7 @@ class AuthServiceTest {
                 .status(savedAuthUser.getStatus().name())
                 .build();
 
-        when(userFactory.createAppUser(request)).thenReturn(savedUser);
-        when(userFactory.createAndLinkAuthWithApp(request, clientRole, savedUser)).thenReturn(savedAuthUser);
+        when(userFactory.createAuthUserWithPasswordAndLinkToAppUser(request, clientRole)).thenReturn(savedAuthUser);
         doNothing().when(validationService).validateEmailNotTaken(request.email());
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> {
             AppUser user = invocation.getArgument(0);
@@ -385,6 +385,7 @@ class AuthServiceTest {
         AuthUser authUser = AuthUser.builder()
                 .email(email)
                 .status(AuthUserStatus.PENDING_DELETION)
+                .loginProvider(LoginProvider.LOCAL)
                 .enabled(true)
                 .roles(Set.of(clientRole))
                 .build();

@@ -61,11 +61,7 @@ public class AuthService {
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
 
-            if(authUser.getLoginProvider().equals(LoginProvider.GOOGLE)) {
-                throw new ApiException("Login with Google is not supported.",
-                        HttpStatus.UNAUTHORIZED,
-                        AuthCodes.LOGIN_WITH_GOOGLE.name());
-            }
+            validationService.validateLoginProvider(authUser, LoginProvider.GOOGLE);
 
             if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
                 scheduledTaskService.cancelTask(authUser.getEmail());
@@ -123,7 +119,7 @@ public class AuthService {
         return cookie;
     }
 
-    public Cookie setCookie(String refreshToken) {
+    private Cookie setCookie(String refreshToken) {
         return createCookie(refreshToken, 60 * 60 * 24);
     }
 
@@ -145,8 +141,8 @@ public class AuthService {
         validationService.validateEmailNotTaken(request.email());
         Role role = roleLookupService.findRoleByName(roleCode);
 
-        AppUser appUser = userFactory.createAppUser(request);
-        AuthUser authUser = userFactory.createAndLinkAuthWithApp(request, role, appUser);
+        AuthUser authUser = userFactory.createAuthUserWithPasswordAndLinkToAppUser(request, role);
+        AppUser appUser = authUser.getAppUser();
 
         authUserRepository.save(authUser);
         AppUser savedAppUser = appUserRepository.save(appUser);

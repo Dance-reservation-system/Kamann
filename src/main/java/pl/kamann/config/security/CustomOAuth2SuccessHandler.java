@@ -1,6 +1,5 @@
 package pl.kamann.config.security;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,15 +10,17 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import pl.kamann.config.exception.services.RoleLookupService;
+import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
-import pl.kamann.entities.appuser.*;
+import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.LoginProvider;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.RefreshTokenService;
+import pl.kamann.services.factory.UserFactory;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -29,9 +30,11 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
     private final AuthUserRepository authUserRepository;
     private final RoleLookupService roleLookupService;
     private final RefreshTokenService refreshTokenService;
+    private final UserFactory userFactory;
+    private final ValidationService validationService;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User user = oauthToken.getPrincipal();
 
@@ -42,34 +45,11 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         Role clientRole = roleLookupService.findRoleByName("CLIENT");
 
         AuthUser authUser = authUserRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    AppUser appUser = AppUser.builder()
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .createdAt(LocalDateTime.now())
-                            .build();
+                .orElseGet(() -> authUserRepository.save(
+                        userFactory.createAuthUserWithOAuthAndLinkToAppUser(email, firstName, lastName, clientRole)
+                ));
 
-                    AuthUser newauthUser = AuthUser.builder()
-                            .email(email)
-                            .loginProvider(LoginProvider.GOOGLE)
-                            .roles(Set.of(clientRole))
-                            .status(AuthUserStatus.ACTIVE)
-                            .enabled(true)
-                            .build();
-
-                    newauthUser.setAppUser(appUser);
-                    appUser.setAuthUser(newauthUser);
-
-                    return authUserRepository.save(newauthUser);
-                });
-
-
-        if(authUser.getLoginProvider().equals(LoginProvider.LOCAL)) {
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().write("Must use local login, or add Google login to your account");
-            return;
-        }
+        validationService.validateLoginProvider(authUser, LoginProvider.LOCAL);
 
         Map<String, Object> claims = jwtUtils.createClaims("role", "CLIENT");
         String token = jwtUtils.generateToken(email, claims);
@@ -82,8 +62,11 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         cookie.setMaxAge(60 * 60 * 24);
         response.addCookie(cookie);
 
+        System.out.println();
+
         response.getWriter().write(token);
 
-//        response.sendRedirect("http://localhost:3000/"); // Redirect to your frontend application
+//        response.sendRedirect("http://localhost:3000/"); // Redirect to frontend application
+
     }
 }

@@ -16,6 +16,7 @@ import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.ResetPasswordRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.LoginProvider;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
@@ -55,13 +56,14 @@ public class PasswordResetServiceTest {
     private AppUserRepository appUserRepository;
 
     @Test
-    void shouldRequestPasswordReset() throws MessagingException {
+    void shouldRequestPasswordReset() {
         AppUser appUser = new AppUser();
         appUser.setFirstName("John");
         appUser.setLastName("Doe");
         appUser.setPhone("123456789");
 
         AuthUser user = new AuthUser();
+        user.setLoginProvider(LoginProvider.LOCAL);
         user.setEmail("test@test.com");
         user.setPassword("old_Password");
         user.setEnabled(true);
@@ -91,6 +93,7 @@ public class PasswordResetServiceTest {
         appUser.setFirstName("John");
         appUser.setLastName("Doe");
 
+        authUser.setLoginProvider(LoginProvider.LOCAL);
         authUser.setEmail(email);
         authUser.setPassword(passwordEncoder.encode("old_password"));
         authUser.setAppUser(appUser);
@@ -110,8 +113,6 @@ public class PasswordResetServiceTest {
         AuthUser updatedUser = authUserRepository.findByEmail(authUser.getEmail()).orElseThrow();
         assertTrue(passwordEncoder.matches("new_password", updatedUser.getPassword()), "Password should be updated");
     }
-
-
 
     @Test
     void shouldThrowExceptionForInvalidToken() {
@@ -137,6 +138,7 @@ public class PasswordResetServiceTest {
         appUser.setPhone("123456789");
 
         AuthUser authUser = new AuthUser();
+        authUser.setLoginProvider(LoginProvider.LOCAL);
         authUser.setEmail("test@test.com");
         authUser.setPassword("hashed_password");
 
@@ -168,6 +170,7 @@ public class PasswordResetServiceTest {
         appUser.setPhone("123456789");
 
         AuthUser user = new AuthUser();
+        user.setLoginProvider(LoginProvider.LOCAL);
         user.setEmail("test@test.com");
         user.setPassword("hashed_password");
         user.setAppUser(appUser);
