@@ -33,7 +33,7 @@ public class UserFactory {
     private AuthUser buildAuthUser(String email, LoginProvider loginProvider, Role role, AuthUserStatus status, boolean enabled) {
         return AuthUser.builder()
                 .email(email)
-                .loginProvider(loginProvider)
+                .loginProviders(Set.of(loginProvider))
                 .roles(Set.of(role))
                 .status(status)
                 .enabled(enabled)
@@ -52,11 +52,10 @@ public class UserFactory {
         return authUser;
     }
 
-    public AuthUser createAuthUserWithOAuthAndLinkToAppUser(String email, String firstName, String lastName, Role role) {
+    public AuthUser createAuthUserWithOAuthAndLinkToAppUser(String email, LoginProvider loginProvider, String firstName, String lastName, Role role) {
         AppUser appUser = createAppUser(firstName, lastName);
 
-        AuthUser authUser = buildAuthUser(email, LoginProvider.GOOGLE, role, AuthUserStatus.ACTIVE, true);
-
+        AuthUser authUser = buildAuthUser(email, loginProvider, role, AuthUserStatus.ACTIVE, true);
         authUser.setAppUser(appUser);
         appUser.setAuthUser(authUser);
 

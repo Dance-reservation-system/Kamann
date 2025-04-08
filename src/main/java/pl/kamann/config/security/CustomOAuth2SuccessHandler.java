@@ -10,7 +10,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import pl.kamann.config.exception.services.RoleLookupService;
-import pl.kamann.config.exception.services.ValidationService;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.LoginProvider;
@@ -31,12 +30,12 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
     private final RoleLookupService roleLookupService;
     private final RefreshTokenService refreshTokenService;
     private final UserFactory userFactory;
-    private final ValidationService validationService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User user = oauthToken.getPrincipal();
+        LoginProvider loginProvider = LoginProvider.valueOf(oauthToken.getAuthorizedClientRegistrationId().toUpperCase());
 
         String email = user.getAttribute("email");
         String firstName = user.getAttribute("given_name");
@@ -46,10 +45,13 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         AuthUser authUser = authUserRepository.findByEmail(email)
                 .orElseGet(() -> authUserRepository.save(
-                        userFactory.createAuthUserWithOAuthAndLinkToAppUser(email, firstName, lastName, clientRole)
+                        userFactory.createAuthUserWithOAuthAndLinkToAppUser(email, loginProvider, firstName, lastName, clientRole)
                 ));
 
-        validationService.validateLoginProvider(authUser, LoginProvider.LOCAL);
+        if (!authUser.getLoginProviders().contains(loginProvider)) {
+            authUser.getLoginProviders().add(loginProvider);
+            authUserRepository.save(authUser);
+        }
 
         Map<String, Object> claims = jwtUtils.createClaims("role", "CLIENT");
         String token = jwtUtils.generateToken(email, claims);

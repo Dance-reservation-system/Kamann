@@ -88,8 +88,8 @@ public class ValidationService {
         }
     }
 
-    public void validateLoginProvider(AuthUser authUser, LoginProvider expectedProvider) {
-        if (authUser.getLoginProvider().equals(expectedProvider)) {
+    public void throwIfMissingLoginProvider(AuthUser authUser, LoginProvider expectedProvider) {
+        if (!authUser.getLoginProviders().contains(expectedProvider)) {
             throw new ApiException("Login provider is not supported for this request.",
                     HttpStatus.UNAUTHORIZED,
                     AuthCodes.INVALID_LOGIN_PROVIDER.name());

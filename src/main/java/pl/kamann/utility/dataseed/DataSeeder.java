@@ -65,16 +65,16 @@ public class DataSeeder {
     }
 
     private void createDefaultAdminAndClient() {
-        createUser("studiokamann@gmail.com", "Admin", "Admin", Set.of(adminRole), LoginProvider.ALL);
-        client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole), LoginProvider.LOCAL);
+        createUser("studiokamann@gmail.com", "Admin", "Admin", Set.of(adminRole), Set.of(LoginProvider.LOCAL, LoginProvider.GOOGLE));
+        client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole), Set.of(LoginProvider.LOCAL));
     }
 
     private void createInstructors() {
         List<AppUser> instructors = Arrays.asList(
-                createUser("instructor1@yoga.com", "Jane", "Doe", Set.of(instructorRole), LoginProvider.LOCAL),
-                createUser("instructor2@yoga.com", "John", "Smith", Set.of(instructorRole), LoginProvider.LOCAL),
-                createUser("instructor3@yoga.com", "Mary", "White", Set.of(instructorRole), LoginProvider.LOCAL),
-                createUser("instructor4@yoga.com", "Lucas", "Brown", Set.of(instructorRole), LoginProvider.LOCAL)
+                createUser("instructor1@yoga.com", "Jane", "Doe", Set.of(instructorRole), Set.of(LoginProvider.LOCAL)),
+                createUser("instructor2@yoga.com", "John", "Smith", Set.of(instructorRole), Set.of(LoginProvider.LOCAL)),
+                createUser("instructor3@yoga.com", "Mary", "White", Set.of(instructorRole), Set.of(LoginProvider.LOCAL)),
+                createUser("instructor4@yoga.com", "Lucas", "Brown", Set.of(instructorRole), Set.of(LoginProvider.LOCAL))
         );
 
         appUserRepository.saveAll(instructors);
@@ -83,15 +83,15 @@ public class DataSeeder {
     private void createClients() {
         IntStream.range(2, 5)
                 .forEach(i -> {
-                    createUser("client" + i + "@client.com", "Client" + i, "Test", Set.of(clientRole), LoginProvider.LOCAL);
+                    createUser("client" + i + "@client.com", "Client" + i, "Test", Set.of(clientRole), Set.of(LoginProvider.LOCAL));
                 });
     }
 
-    private AuthUser createAuthUser(String email, Set<Role> role, LoginProvider loginProvider) {
+    private AuthUser createAuthUser(String email, Set<Role> role, Set<LoginProvider> loginProvider) {
         return authUserRepository.save(AuthUser.builder()
                 .email(email)
                 .password(passwordEncoder.encode("admin"))
-                .loginProvider(loginProvider)
+                .loginProviders(loginProvider)
                 .status(AuthUserStatus.ACTIVE)
                 .enabled(true)
                 .roles(role)
@@ -106,7 +106,7 @@ public class DataSeeder {
                 .build());
     }
 
-    private AppUser createUser(String email, String firstName, String lastName, Set<Role> roles, LoginProvider loginProvider) {
+    private AppUser createUser(String email, String firstName, String lastName, Set<Role> roles, Set<LoginProvider> loginProvider) {
         AuthUser authUser = createAuthUser(email, roles, loginProvider);
         return createAppUser(firstName, lastName, authUser);
     }

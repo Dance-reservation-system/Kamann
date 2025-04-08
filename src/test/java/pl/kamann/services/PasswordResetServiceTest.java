@@ -24,7 +24,9 @@ import pl.kamann.services.email.EmailSender;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -63,7 +65,7 @@ public class PasswordResetServiceTest {
         appUser.setPhone("123456789");
 
         AuthUser user = new AuthUser();
-        user.setLoginProvider(LoginProvider.LOCAL);
+        user.setLoginProviders(Set.of(LoginProvider.LOCAL));
         user.setEmail("test@test.com");
         user.setPassword("old_Password");
         user.setEnabled(true);
@@ -93,16 +95,13 @@ public class PasswordResetServiceTest {
         appUser.setFirstName("John");
         appUser.setLastName("Doe");
 
-        authUser.setLoginProvider(LoginProvider.LOCAL);
+        authUser.setLoginProviders(new HashSet<>(Set.of(LoginProvider.LOCAL)));
         authUser.setEmail(email);
         authUser.setPassword(passwordEncoder.encode("old_password"));
         authUser.setAppUser(appUser);
 
         appUser.setAuthUser(authUser);
         authUserRepository.save(authUser);
-
-        appUser.setAuthUser(authUser);
-
         appUserRepository.save(appUser);
 
         when(jwtUtils.validateToken(request.getToken(), TokenType.RESET_PASSWORD)).thenReturn(true);
@@ -138,7 +137,7 @@ public class PasswordResetServiceTest {
         appUser.setPhone("123456789");
 
         AuthUser authUser = new AuthUser();
-        authUser.setLoginProvider(LoginProvider.LOCAL);
+        authUser.setLoginProviders(Set.of(LoginProvider.LOCAL));
         authUser.setEmail("test@test.com");
         authUser.setPassword("hashed_password");
 
@@ -170,7 +169,7 @@ public class PasswordResetServiceTest {
         appUser.setPhone("123456789");
 
         AuthUser user = new AuthUser();
-        user.setLoginProvider(LoginProvider.LOCAL);
+        user.setLoginProviders(Set.of(LoginProvider.LOCAL));
         user.setEmail("test@test.com");
         user.setPassword("hashed_password");
         user.setAppUser(appUser);

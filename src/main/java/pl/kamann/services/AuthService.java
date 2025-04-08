@@ -61,7 +61,7 @@ public class AuthService {
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
 
-            validationService.validateLoginProvider(authUser, LoginProvider.GOOGLE);
+            validationService.throwIfMissingLoginProvider(authUser, LoginProvider.LOCAL);
 
             if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
                 scheduledTaskService.cancelTask(authUser.getEmail());

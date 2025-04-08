@@ -31,9 +31,13 @@ public class AuthUser implements UserDetails, Serializable {
     @Column
     private String password;
 
-    @Column(nullable = false)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "auth_user_login_providers",
+            joinColumns = @JoinColumn(name = "auth_user_id")
+    )
     @Enumerated(EnumType.STRING)
-    private LoginProvider loginProvider;
+    private Set<LoginProvider> loginProviders;
 
     private boolean enabled = false;
 

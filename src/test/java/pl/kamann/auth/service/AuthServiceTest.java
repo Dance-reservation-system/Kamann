@@ -111,7 +111,7 @@ class AuthServiceTest {
         AuthUser user = AuthUser.builder()
                 .email(loginRequest.email())
                 .password("encodedPassword")
-                .loginProvider(LoginProvider.LOCAL)
+                .loginProviders(Set.of(LoginProvider.LOCAL))
                 .roles(Set.of(clientRole))
                 .enabled(true)
                 .build();
@@ -385,7 +385,7 @@ class AuthServiceTest {
         AuthUser authUser = AuthUser.builder()
                 .email(email)
                 .status(AuthUserStatus.PENDING_DELETION)
-                .loginProvider(LoginProvider.LOCAL)
+                .loginProviders(Set.of(LoginProvider.LOCAL))
                 .enabled(true)
                 .roles(Set.of(clientRole))
                 .build();
