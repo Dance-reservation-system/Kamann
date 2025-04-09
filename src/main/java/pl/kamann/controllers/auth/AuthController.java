@@ -2,6 +2,7 @@ package pl.kamann.controllers.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,8 @@ import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.PasswordResetService;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -53,6 +56,13 @@ public class AuthController {
     @Operation(summary = "Instructor Registration", description = "Registers a new instructor.")
     public ResponseEntity<AppUserDto> registerInstructor(@RequestBody @Valid RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerInstructor(request));
+    }
+
+    @GetMapping("/oauth2/register")
+    @Operation(summary = "OAuth2 Registration", description = "Handles OAuth2 registration.")
+    public void registerClientDeprecated(@RequestParam String role, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        request.getSession().setAttribute("role", role);
+        response.sendRedirect("http://localhost:8080/oauth2/authorization/google");
     }
 
     @GetMapping("/confirm")

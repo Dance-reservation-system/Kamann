@@ -1,5 +1,6 @@
 package pl.kamann.config.exception.services;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -93,6 +94,16 @@ public class ValidationService {
             throw new ApiException("Login provider is not supported for this request.",
                     HttpStatus.UNAUTHORIZED,
                     AuthCodes.INVALID_LOGIN_PROVIDER.name());
+        }
+    }
+
+    public void isSessionHasRole(HttpServletRequest request) {
+        if(request.getSession().getAttribute("role") == null){
+            throw new ApiException(
+                    "User not exists. Role not found in request",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.USER_NOT_FOUND.getCode()
+            );
         }
     }
 }

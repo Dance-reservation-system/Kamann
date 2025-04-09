@@ -52,10 +52,10 @@ public class UserFactory {
         return authUser;
     }
 
-    public AuthUser createAuthUserWithOAuthAndLinkToAppUser(String email, LoginProvider loginProvider, String firstName, String lastName, Role role) {
+    public AuthUser createAuthUserWithOAuthAndLinkToAppUser(String email, LoginProvider loginProvider, String firstName, String lastName, Role role, AuthUserStatus status, Boolean enabled) {
         AppUser appUser = createAppUser(firstName, lastName);
 
-        AuthUser authUser = buildAuthUser(email, loginProvider, role, AuthUserStatus.ACTIVE, true);
+        AuthUser authUser = buildAuthUser(email, loginProvider, role, status, enabled);
         authUser.setAppUser(appUser);
         appUser.setAuthUser(authUser);
 
