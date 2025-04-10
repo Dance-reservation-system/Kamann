@@ -1,6 +1,7 @@
 package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.exception.services.EventLookupService;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.*;
 import pl.kamann.dtos.event.EventDto;
@@ -36,7 +38,9 @@ public class ClientEventService {
     private final UserLookupService userLookupService;
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
+    private final EventLookupService eventLookupService;
 
+    @Cacheable(value = "occurrencesLight", key = "#scope + '-' + #page + '-' + #size")
     public PaginatedResponseDto<OccurrenceEventLightDto> getOccurrences(OccurrenceEventScope scope, int page, int size) {
         if (scope == null) {
             scope = OccurrenceEventScope.UPCOMING;
@@ -53,6 +57,7 @@ public class ClientEventService {
         return paginationUtil.toPaginatedResponse(pagedOccurrences, occurrenceEventMapper::toOccurrenceEventLightDto);
     }
 
+    @Cacheable(value = "eventsLight", key = "#page + '-' + #size")
     public PaginatedResponseDto<EventLightDto> getLightEvents(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
         pageable = paginationService.validatePageable(pageable);
@@ -61,6 +66,7 @@ public class ClientEventService {
         return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toEventLightDto);
     }
 
+    @Cacheable(value = "events", key = "#eventType + '-' +  #page + '-' + #size")
     public PaginatedResponseDto<EventDto> getEventsByType(String eventType, int page, int size) {
         String capitalizedEventType = eventType.substring(0, 1).toUpperCase() + eventType.substring(1).toLowerCase();
         Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
@@ -70,6 +76,7 @@ public class ClientEventService {
         return paginationUtil.toPaginatedResponse(pagedEvent, eventMapper::toEventDto);
     }
 
+    @Cacheable(value = "occurrences", key = "#occurrenceId")
     public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
         OccurrenceEvent occurrenceEvent = occurrenceEventRepository.findById(occurrenceId)
                 .orElseThrow(() -> new ApiException(
@@ -80,12 +87,9 @@ public class ClientEventService {
         return occurrenceEventMapper.toOccurrenceEventDto(occurrenceEvent);
     }
 
+    @Cacheable(value = "events", key = "#eventId")
     public EventDto getEventById(Long eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found with ID: " + eventId,
-                        HttpStatus.BAD_REQUEST,
-                        EventCodes.EVENT_NOT_FOUND.name()));
+        Event event = eventLookupService.findEventById(eventId);
 
         return eventMapper.toEventDto(event);
     }

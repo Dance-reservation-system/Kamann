@@ -3,6 +3,7 @@ package pl.kamann.dtos;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -39,5 +40,5 @@ public record OccurrenceEventDto(
         boolean isModified,
 
         int attendanceCount
-) {
+) implements Serializable {
 }
