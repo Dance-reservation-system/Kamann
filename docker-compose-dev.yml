@@ -13,13 +13,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-#                         Mute this config to improve starting service on dev profile
-#    healthcheck:
-#      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
-
   redis:
     image: redis:latest
     container_name: redis
@@ -27,22 +20,6 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-
-
-#                         Mute this step as redundant on dev profile
-#  app:
-#    build: .
-#    container_name: spring-boot-app
-#    env_file:
-#      - .env
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kamann
-#      SPRING_PROFILES_ACTIVE: dev
-#    ports:
-#      - "8081:8080"
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
 
 volumes:
   postgres_data:
