@@ -7,6 +7,7 @@ import pl.kamann.config.exception.services.AccountValidationService;
 import pl.kamann.config.exception.services.UserLookupService;
 import pl.kamann.dtos.UserDetailsDto;
 import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.mappers.UserDetailsMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
@@ -24,7 +25,6 @@ public class ClientAccountService {
     private final AppUserRepository appUserRepository;
     private final AuthUserRepository authUserRepository;
 
-    @GetMapping
     public UserDetailsDto getUserDetails() {
         AppUser loggedInAppUser = userLookupService.getLoggedInUser();
 
@@ -37,17 +37,31 @@ public class ClientAccountService {
         accountValidationService.validateUpdateRequest(requestDto);
 
         updateUserAccount(loggedInAppUser, requestDto);
-        AppUser updatedUser = appUserRepository.save(loggedInAppUser);
-        authUserRepository.save(updatedUser.getAuthUser());
+        AuthUser authUser = loggedInAppUser.getAuthUser();
 
-        return userDetailsMapper.toUserDetailsDto(updatedUser);
+        AppUser savedAppUser = appUserRepository.save(loggedInAppUser);
+        authUserRepository.save(authUser);
+
+
+        return userDetailsMapper.toUserDetailsDto(savedAppUser);
     }
 
     public void updateUserAccount(AppUser user, UserDetailsDto requestDto) {
-        user.setLastName(requestDto.lastName());
-        user.setFirstName(requestDto.firstName());
-        user.setPhone(requestDto.phone());
-        user.getAuthUser().setEmail(requestDto.email());
+        if(requestDto.lastName() != null) {
+            user.setLastName(requestDto.lastName());
+        }
+
+        if (requestDto.firstName() != null) {
+            user.setFirstName(requestDto.firstName());
+        }
+
+        if (requestDto.phone() != null) {
+            user.setPhone(requestDto.phone());
+        }
+
+        if(requestDto.email() != null) {
+            user.getAuthUser().setEmail(requestDto.email());
+        }
 
         user.setUpdatedAt(LocalDateTime.now());
     }

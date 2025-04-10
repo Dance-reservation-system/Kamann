@@ -20,7 +20,7 @@ public class ClientAccountController {
         return ResponseEntity.ok(clientAccountService.getUserDetails());
     }
 
-    @PatchMapping
+    @PatchMapping("/edit")
     public ResponseEntity<UserDetailsDto> updateUserDetails(
             @RequestBody() UserDetailsDto userDetailsDto
     ) {
