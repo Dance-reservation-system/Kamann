@@ -20,9 +20,7 @@ import pl.kamann.services.email.EmailSender;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.*;
 
 @Service
 @RequiredArgsConstructor
@@ -32,14 +30,13 @@ public class ConfirmUserService {
     private final TokenService tokenService;
     private final ValidationService validationService;
     private final UserLookupService userLookupService;
-    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
     private final ExceptionHandlerService exceptionHandlerService;
 
     private final EmailSender emailSender;
     private final JwtUtils jwtUtils;
+    private final ScheduledTaskService scheduledTaskService;
 
     private final AuthUserRepository authUserRepository;
-    private final Map<String, ScheduledFuture<?>> deletionTasks = new ConcurrentHashMap<>();
 
 
     private void sendConfirmationEmail(AuthUser authUser, String token) {
@@ -62,38 +59,10 @@ public class ConfirmUserService {
         }
     }
 
-    private void handleEmailSending(AuthUser authUser) {
+    public void sendConfirmationEmail(AuthUser authUser) {
         String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION);
         sendConfirmationEmail(authUser, token);
-        scheduleUserDeletion(authUser.getEmail());
-    }
-
-    public void sendConfirmationEmail(AuthUser authUser) {
-        handleEmailSending(authUser);
-    }
-
-    private void scheduleUserDeletion(String email) {
-        cancelDeletionTask(email);
-
-        ScheduledFuture<?> task = scheduledExecutorService.schedule(() -> {
-            Optional<AuthUser> authUserOptional = authUserRepository.findByEmail(email);
-            if (authUserOptional.isPresent() && !authUserOptional.get().isEnabled()) {
-                authUserRepository.delete(authUserOptional.get());
-                log.info("User {} deleted due to inactivity after {} minutes", email, 15);
-            }
-            deletionTasks.remove(email);
-        }, 15, TimeUnit.MINUTES);
-
-        deletionTasks.put(email, task);
-    }
-
-    private void cancelDeletionTask(String email) {
-        ScheduledFuture<?> task = deletionTasks.get(email);
-        if (task != null && !task.isDone() && !task.isCancelled()) {
-            task.cancel(false);
-            log.info("Cancelled scheduled deletion task for user: {}", email);
-        }
-        deletionTasks.remove(email);
+        scheduledTaskService.scheduleDeletionUser(authUser.getEmail());
     }
 
     @Transactional
@@ -119,7 +88,7 @@ public class ConfirmUserService {
             user.setStatus(AuthUserStatus.ACTIVE);
             authUserRepository.save(user);
 
-            cancelDeletionTask(email);
+            scheduledTaskService.cancelTask(email);
 
             log.info("User account confirmed for: {}", user.getEmail());
 

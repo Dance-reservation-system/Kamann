@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.dmfs.rfc5545.DateTime;
 import org.dmfs.rfc5545.recur.RecurrenceRule;
 import org.dmfs.rfc5545.recur.RecurrenceRuleIterator;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,7 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.exception.services.EventLookupService;
+import pl.kamann.config.exception.services.UserLookupService;
 import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.config.pagination.PaginationService;
+import pl.kamann.config.pagination.PaginationUtil;
 import pl.kamann.dtos.event.*;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
@@ -25,10 +31,6 @@ import pl.kamann.repositories.OccurrenceEventRepository;
 import pl.kamann.services.EventTypeService;
 import pl.kamann.services.EventValidationService;
 import pl.kamann.services.NotificationService;
-import pl.kamann.config.pagination.PaginationService;
-import pl.kamann.config.pagination.PaginationUtil;
-import pl.kamann.config.exception.services.EventLookupService;
-import pl.kamann.config.exception.services.UserLookupService;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -55,6 +57,7 @@ public class AdminEventService {
     private final EventLookupService eventLookupService;
 
     @Transactional
+    @CacheEvict(value = {"events", "eventsLight", "occurrences", "occurrencesLight"}, allEntries = true)
     public CreateEventResponse createEvent(CreateEventRequest request) {
         eventValidationService.validateCreate(request);
 
@@ -72,6 +75,7 @@ public class AdminEventService {
         return eventMapper.toCreateEventResponse(event);
     }
 
+    @Cacheable(value = "events", key = "#page + '-' + #size")
     public PaginatedResponseDto<EventDto> listEvents(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
         pageable = paginationService.validatePageable(pageable);
@@ -82,6 +86,7 @@ public class AdminEventService {
     }
 
     @Transactional
+    @CacheEvict(value = {"events", "eventsLight", "occurrences", "occurrencesLight"}, allEntries = true)
     public EventUpdateResponse updateEvent(Long id, EventUpdateRequest requestDto) {
         Event event = eventLookupService.findEventById(id);
 
@@ -94,6 +99,7 @@ public class AdminEventService {
     }
 
     @Transactional
+    @CacheEvict(value = {"events", "eventsLight", "occurrences", "occurrencesLight"}, allEntries = true)
     public void deleteEvent(Long id, boolean force) {
         Event event = eventLookupService.findEventById(id);
 
@@ -107,6 +113,7 @@ public class AdminEventService {
     }
 
     @Transactional
+    @CacheEvict(value = {"events", "eventsLight", "occurrences", "occurrencesLight"}, allEntries = true)
     public void cancelEvent(Long id, EventStatus eventStatus) {
         Event event = eventLookupService.findEventById(id);
         LocalDateTime now = LocalDateTime.now();
@@ -192,9 +199,10 @@ public class AdminEventService {
                 .build();
     }
 
+    @Cacheable(value = "events", key = "#eventId")
     public EventDto getEventDtoById(Long eventId) {
-        Event eventById = eventLookupService.findEventById(eventId);
+        Event event = eventLookupService.findEventById(eventId);
 
-        return eventMapper.toEventDto(eventById);
+        return eventMapper.toEventDto(event);
     }
 }

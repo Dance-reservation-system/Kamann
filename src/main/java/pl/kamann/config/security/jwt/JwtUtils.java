@@ -1,10 +1,8 @@
 package pl.kamann.config.security.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
@@ -15,7 +13,10 @@ import org.springframework.stereotype.Component;
 import pl.kamann.entities.appuser.TokenType;
 
 import javax.crypto.SecretKey;
-import java.util.*;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -29,7 +30,8 @@ public class JwtUtils {
     @Getter
     private SecretKey secretKey;
 
-    public JwtUtils() {}
+    public JwtUtils() {
+    }
 
     @PostConstruct
     public void init() {
@@ -63,16 +65,11 @@ public class JwtUtils {
     }
 
     private Claims extractAllClaims(String token) {
-        try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (JwtException e) {
-            log.error("JWT Parsing failed: {}", e.getMessage());
-            throw new RuntimeException("Invalid JWT token", e);
-        }
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     public boolean validateToken(String token, TokenType... expectedType) {
@@ -88,9 +85,12 @@ public class JwtUtils {
             }
 
             return !isTokenExpired(token);
-        } catch (JwtException e) {
-            log.error("JWT validation failed: {}", e.getMessage());
-            return false;
+        } catch (ExpiredJwtException e) {
+            throw new ExpiredJwtException(null, null, e.getMessage());
+        } catch (SignatureException e) {
+            throw new SignatureException(e.getMessage());
+        } catch (MalformedJwtException e) {
+            throw new MalformedJwtException(e.getMessage());
         }
     }
 
@@ -98,10 +98,13 @@ public class JwtUtils {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
-    public Optional<String> extractTokenFromRequest(HttpServletRequest request) {
+    public String extractTokenFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        return (bearerToken != null && bearerToken.startsWith("Bearer "))
-                ? Optional.of(bearerToken.substring(7))
-                : Optional.empty();
+
+        if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("No JWT token found in request");
+        }
+
+        return bearerToken.substring(7);
     }
 }

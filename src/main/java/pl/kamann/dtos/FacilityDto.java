@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
 
+import java.io.Serializable;
 import java.time.LocalTime;
 
 @Builder
@@ -27,7 +28,7 @@ public record FacilityDto(
     @Schema(type = "string", format = "time", example = "18:00:00")
     @JsonFormat(pattern = "HH:mm:ss")
     LocalTime closingHours
-){
+) implements Serializable {
     public FacilityDto {
         if (openingHours != null && closingHours != null) {
             validateOpeningAndClosingHours(openingHours, closingHours);

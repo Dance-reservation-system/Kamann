@@ -9,7 +9,7 @@ import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.services.admin.AdminAttendanceService;
 
 @RestController
-@RequestMapping("/api/admin/attendance")
+@RequestMapping("/api/v1/admin/attendance")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminAttendanceController {

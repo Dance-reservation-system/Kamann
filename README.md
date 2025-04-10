@@ -15,7 +15,7 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
 
 [![Build with Tests](https://github.com/Dance-reservation-system/Kamann/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Dance-reservation-system/Kamann/actions/workflows/ci-cd.yml)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Dance-reservation-system/Kamann?color=green)
-![Deployment Status](https://raw.githubusercontent.com/Dance-reservation-system/Kamann/develop/badges/deployment-status.svg)
+![Deploy - Railway](https://github.com/Dance-reservation-system/Kamann/actions/workflows/main.yml/badge.svg)
 
 
 ## 🌟 Features

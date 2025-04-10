@@ -1,0 +1,120 @@
+name: Issue Automation
+on:
+  issues:
+    types: [opened, assigned, reopened]
+
+concurrency:
+  group: issue-automation-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  number-issue:
+    if: github.event.action == 'opened' || github.event.action == 'reopened'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Process issue title and assign labels
+        run: |
+          set -x
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+
+          echo "ISSUE_TITLE=$ISSUE_TITLE"
+          echo "ISSUE_NUMBER=$ISSUE_NUMBER"
+
+          RAW_PREFIX=$(echo "$ISSUE_TITLE" | grep -oE '^[a-zA-Z]+' | tr '[:upper:]' '[:lower:]' || echo "")
+          echo "RAW_PREFIX=$RAW_PREFIX"
+
+          case "$RAW_PREFIX" in
+            bug|fix)
+              TYPE_LABEL="type:Bug"; BRANCH_PREFIX="bugfix";;
+            feature|enhancement|proposal)
+              TYPE_LABEL="type:Feature"; BRANCH_PREFIX="feature";;
+            *)
+              TYPE_LABEL="type:feature"; BRANCH_PREFIX="feature";;
+          esac
+
+          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed -E 's/^KMN-[0-9]+[[:space:]]*[:]*[[:space:]]*//i' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          NEW_TITLE="KMN-$ISSUE_NUMBER: $CLEAN_TITLE"
+
+          echo "NEW_TITLE=$NEW_TITLE"
+          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
+
+          gh issue edit "$ISSUE_NUMBER" --title "$NEW_TITLE" --repo "${{ github.repository }}" || { echo "Failed to update title to $NEW_TITLE for issue #$ISSUE_NUMBER"; exit 1; }
+          echo "Title updated successfully"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  create-branch:
+    if: github.event.action == 'assigned'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Process issue title and set variables
+        id: process_title
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+      
+          echo "ISSUE_NUMBER=$ISSUE_NUMBER" >> $GITHUB_ENV
+          echo "KMN_NUMBER=$ISSUE_NUMBER" >> $GITHUB_ENV
+      
+          RAW_PREFIX=$(echo "$ISSUE_TITLE" | grep -oE '^[a-zA-Z]+' | tr '[:upper:]' '[:lower:]' || echo "")
+      
+          case "$RAW_PREFIX" in
+            bug|fix)
+              BRANCH_PREFIX="bugfix";;
+            feature|enhancement|proposal)
+              BRANCH_PREFIX="feature";;
+            *)
+              BRANCH_PREFIX="feature";;
+          esac
+          echo "BRANCH_PREFIX=$BRANCH_PREFIX" >> $GITHUB_ENV
+      
+          CLEAN_TITLE=$(echo "$ISSUE_TITLE" | sed 's/KMN-[0-9]*: *//' | sed -E "s/^[[:space:]]*${RAW_PREFIX}[[:space:]]*[:]*[[:space:]]*//i" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          SLUGGED_TITLE=$(echo "$CLEAN_TITLE" | tr '[:upper:]' '[:lower:]' | tr -s '[:punct:]' '-' | tr ' ' '-')
+          echo "SLUGGED_TITLE=$SLUGGED_TITLE" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Create a new branch based on the issue number
+        run: |
+          BRANCH_NAME="${{ env.BRANCH_PREFIX }}/KMN-${{ env.KMN_NUMBER }}-${{ env.SLUGGED_TITLE }}"
+
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Branch $BRANCH_NAME already exists, skipping"
+          else
+            git checkout -b "$BRANCH_NAME"
+            git push --set-upstream origin "$BRANCH_NAME"
+            echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Add branch link to issue and connect
+        if: env.BRANCH_NAME != '' && github.event.issue.number != ''
+        run: |
+          REPO_URL=https://github.com/${{ github.repository }}
+          BRANCH_URL=${REPO_URL}/tree/${{ env.BRANCH_NAME }}
+      
+          echo "Branch Name: $BRANCH_NAME"
+          echo "Issue Number: $ISSUE_NUMBER"
+      
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "Error: ISSUE_NUMBER is empty."
+            exit 1
+          fi
+      
+          # Post comment
+          gh issue comment "$ISSUE_NUMBER" --body "🔗 Branch created: [$BRANCH_NAME]($BRANCH_URL) for @${{ github.event.assignee.login }}"
+      
+          # Try to link the branch to the issue (this works if GitHub CLI is up to date and repo supports it)
+          gh issue develop "$ISSUE_NUMBER" --repo "${{ github.repository }}" --branch "$BRANCH_NAME" || echo "Warning: couldn't formally connect the branch to the issue. Smart linking may still apply."
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}

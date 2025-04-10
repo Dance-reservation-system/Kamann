@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -26,14 +25,13 @@ import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AuthUser;
-import pl.kamann.entities.appuser.RefreshToken;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.factory.UserFactory;
+
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -55,6 +53,8 @@ public class AuthService {
     private final RoleLookupService roleLookupService;
     private final RefreshTokenService refreshTokenService;
 
+    private final ScheduledTaskService scheduledTaskService;
+
     public LoginResponse login(@Valid LoginRequest request, HttpServletResponse response) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -62,6 +62,11 @@ public class AuthService {
             );
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
+
+            if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
+                scheduledTaskService.cancelTask(authUser.getEmail());
+                authUser.setStatus(AuthUserStatus.ACTIVE);
+            }
             log.info("User logged in successfully: email={}", authUser.getEmail());
 
             String accessToken = jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles().stream().map(Role::getName).toList()));
@@ -76,20 +81,12 @@ public class AuthService {
                     HttpStatus.UNAUTHORIZED,
                     AuthCodes.EMAIL_NOT_CONFIRMED.name()
             );
-        } catch (BadCredentialsException e) {
-            log.warn("Invalid User credentials attempt for email: {}", request.email());
-            throw new ApiException(
-                    "Invalid user credentials.",
-                    HttpStatus.UNAUTHORIZED,
-                    AuthCodes.UNAUTHORIZED.name()
-            );
         }
     }
 
-
     public LoginResponse refreshToken(String refreshToken, HttpServletResponse response) {
         log.info("Refreshing token: refreshToken={}", refreshToken);
-        response.addCookie(unSetCookie());
+
         validationService.validateRefreshToken(refreshToken);
 
         RefreshToken token = refreshTokenService.getRefreshToken(refreshToken).orElseThrow(() ->
@@ -97,17 +94,20 @@ public class AuthService {
                         HttpStatus.UNAUTHORIZED,
                         AuthCodes.INVALID_TOKEN.name()));
 
-        refreshTokenService.deleteRefreshToken(token);
         validationService.isRefreshTokenExpired(token);
 
         AuthUser authUser = token.getAuthUser();
-        authUserRepository.save(authUser);
+
         String accessToken = jwtUtils.generateToken(authUser.getEmail(), jwtUtils.createClaims("roles", authUser.getRoles()));
         String newRefreshToken = refreshTokenService.generateRefreshToken(authUser);
 
+        refreshTokenService.deleteRefreshToken(token);
+
+        response.addCookie(unSetCookie());
+        response.addCookie(setCookie(newRefreshToken));
+
         log.info("Token refreshed successfully: email={}", authUser.getEmail());
 
-        response.addCookie(setCookie(newRefreshToken));
         return new LoginResponse(accessToken);
     }
 
@@ -154,10 +154,7 @@ public class AuthService {
     }
 
     public AppUserResponseDto getLoggedInAppUser(HttpServletRequest request) {
-        String token = jwtUtils.extractTokenFromRequest(request)
-                .orElseThrow(() -> new ApiException("Invalid or missing token",
-                        HttpStatus.UNAUTHORIZED,
-                        AuthCodes.INVALID_TOKEN.name()));
+        String token = jwtUtils.extractTokenFromRequest(request);
 
         if (!jwtUtils.validateToken(token)) {
             throw new ApiException("Invalid or expired token",
@@ -169,5 +166,16 @@ public class AuthService {
 
         AppUser appUser = userLookupService.findUserByEmail(email);
         return appUserMapper.toAppUserResponseDto(appUser);
+    }
+
+    public void requestAccountDeletion(String email) {
+        log.info("Requesting account deletion for email: {}", email);
+
+        AuthUser authUser = userLookupService.findUserByEmail(email).getAuthUser();
+
+        authUser.setStatus(AuthUserStatus.PENDING_DELETION);
+
+        scheduledTaskService.scheduledSoftDeletionUser(authUser);
+        authUserRepository.save(authUser);
     }
 }
