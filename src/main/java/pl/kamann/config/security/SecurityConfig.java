@@ -36,7 +36,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/oauth2/**",
-            "/login/oauth2/**"
+            "/login/oauth2/**",
+            "/favicon.ico"
     };
 
     private static final String[] ADMIN_URLS = {
