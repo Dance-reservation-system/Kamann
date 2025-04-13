@@ -16,7 +16,7 @@ public class InstructorAccountService {
 
     public UserDetailsDto getInstructorDetails() {
         AppUser loggedInAppUser = userLookupService.getLoggedInUser();
-
+        
         return userDetailsMapper.toUserDetailsDto(loggedInAppUser);
     }
 }
