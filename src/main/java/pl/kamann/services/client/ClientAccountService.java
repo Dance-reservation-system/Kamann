@@ -2,7 +2,7 @@ package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.exception.services.AccountValidationService;
 import pl.kamann.config.exception.services.UserLookupService;
 import pl.kamann.dtos.UserDetailsDto;
@@ -25,13 +25,14 @@ public class ClientAccountService {
     private final AppUserRepository appUserRepository;
     private final AuthUserRepository authUserRepository;
 
-    public UserDetailsDto getUserDetails() {
+    public UserDetailsDto getClientDetails() {
         AppUser loggedInAppUser = userLookupService.getLoggedInUser();
 
         return userDetailsMapper.toUserDetailsDto(loggedInAppUser);
     }
 
-    public UserDetailsDto updateUserDetails(UserDetailsDto requestDto) {
+    @Transactional
+    public UserDetailsDto updateClientDetails(UserDetailsDto requestDto) {
         AppUser loggedInAppUser = userLookupService.getLoggedInUser();
 
         accountValidationService.validateUpdateRequest(requestDto);
@@ -46,7 +47,7 @@ public class ClientAccountService {
         return userDetailsMapper.toUserDetailsDto(savedAppUser);
     }
 
-    public void updateUserAccount(AppUser user, UserDetailsDto requestDto) {
+    private void updateUserAccount(AppUser user, UserDetailsDto requestDto) {
         if(requestDto.lastName() != null) {
             user.setLastName(requestDto.lastName());
         }

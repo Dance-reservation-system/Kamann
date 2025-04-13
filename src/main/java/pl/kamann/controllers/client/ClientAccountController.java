@@ -16,14 +16,14 @@ public class ClientAccountController {
     private final ClientAccountService clientAccountService;
 
     @GetMapping
-    public ResponseEntity<UserDetailsDto> getUserDetails() {
-        return ResponseEntity.ok(clientAccountService.getUserDetails());
+    public ResponseEntity<UserDetailsDto> getClientDetails() {
+        return ResponseEntity.ok(clientAccountService.getClientDetails());
     }
 
-    @PatchMapping("/edit")
-    public ResponseEntity<UserDetailsDto> updateUserDetails(
-            @RequestBody() UserDetailsDto userDetailsDto
+    @PatchMapping
+    public ResponseEntity<UserDetailsDto> updateClientDetails(
+            @RequestBody UserDetailsDto userDetailsDto
     ) {
-        return ResponseEntity.ok(clientAccountService.updateUserDetails(userDetailsDto));
+        return ResponseEntity.ok(clientAccountService.updateClientDetails(userDetailsDto));
     }
 }
