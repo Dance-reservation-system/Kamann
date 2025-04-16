@@ -52,10 +52,19 @@ public class AdminUserController {
     @GetMapping("/clients/{clientId}/profile")
     @Operation(
             summary = "Get client details.",
-            description = "Retrieve an UserDetailsDto of user founded by ID."
+            description = "Retrieve an UserDetailsDto of client founded by ID."
     )
     public ResponseEntity<UserDetailsDto> getClientDetailsById(@PathVariable Long clientId) {
-        return ResponseEntity.ok(adminUserService.getUserByID(clientId));
+        return ResponseEntity.ok(adminUserService.getClientByID(clientId));
+    }
+
+    @GetMapping("/clients/{instructorId}/profile")
+    @Operation(
+            summary = "Get instructor details.",
+            description = "Retrieve an UserDetailsDto of instructor founded by ID."
+    )
+    public ResponseEntity<UserDetailsDto> getInstructorDetailsById(@PathVariable Long instructorId) {
+        return ResponseEntity.ok(adminUserService.getInstructorByID(instructorId));
     }
 
 

@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.UserDetailsDto;
+import pl.kamann.entities.appuser.Role;
+
+import java.util.Set;
 
 @RequiredArgsConstructor
 @Service
@@ -73,6 +76,22 @@ public class AccountValidationService {
     public void validatePhone(String phone) {
         if (phone == null || phone.length() != 9 || !phone.matches("\\d+")) {
             throw new ApiException("Phone number must be exactly 9 digits",
+                    HttpStatus.BAD_REQUEST,
+                    StatusCodes.INVALID_INPUT.name());
+        }
+    }
+
+    public void validateClient(Set<Role> roles) {
+        if(roles.contains("CLIENT")) {
+            throw new ApiException("User is not a Client",
+                    HttpStatus.BAD_REQUEST,
+                    StatusCodes.INVALID_INPUT.name());
+        }
+    }
+
+    public void validateInstructor(Set<Role> roles) {
+        if(!roles.contains("INSTRUCTOR")) {
+            throw new ApiException("User is not a Client",
                     HttpStatus.BAD_REQUEST,
                     StatusCodes.INVALID_INPUT.name());
         }
