@@ -129,7 +129,7 @@ public class EventValidationService {
                         untilDateTime.getTimestamp() / 1000, 0, java.time.ZoneOffset.UTC);
                 LocalDateTime maxAllowedUntil = start.plusMonths(2);
                 if (untilLocalDate.isAfter(maxAllowedUntil)) {
-                    throw new ApiException("RRULE UNTIL meetindDate cannot be more than 2 months after the event start.",
+                    throw new ApiException("RRULE UNTIL meetingDate cannot be more than 2 months after the event start.",
                             HttpStatus.BAD_REQUEST,
                             RecurrenceCodes.INVALID_UNTIL_DATE.name());
                 }
