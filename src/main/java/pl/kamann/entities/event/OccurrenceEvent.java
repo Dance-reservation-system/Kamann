@@ -1,7 +1,27 @@
 package pl.kamann.entities.event;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import pl.kamann.dtos.OccurrenceEventScope;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
@@ -9,8 +29,8 @@ import pl.kamann.entities.attendance.Attendance;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -19,8 +39,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Table(indexes = {
-        @Index(name = "idx_occurrence_event", columnList = "event_id,start"),
-        @Index(name = "idx_occurrence_start", columnList = "start")
+        @Index(name = "idx_occurrence_event", columnList = "event_id, meeting_date"),
+        @Index(name = "idx_occurrence_meeting_date", columnList = "meeting_date")
 })
 public class OccurrenceEvent implements Serializable {
 
@@ -35,21 +55,14 @@ public class OccurrenceEvent implements Serializable {
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
-    @Column(nullable = false)
-    private LocalDateTime start;
+    @Column(name = "meeting_date", nullable = false)
+    private LocalDateTime meetingDate;
 
     @Column(nullable = false)
-    private Integer durationMinutes;
+    private OccurrenceEventStatus occurrenceEventStatus;
 
-    private boolean canceled;
-
-    private boolean excluded;
-
+    @Transient
     private AppUser createdBy;
-
-    private int maxParticipants;
-
-    private EventStatus eventStatus;
 
     @Column(nullable = false)
     private int seriesIndex;
@@ -62,39 +75,13 @@ public class OccurrenceEvent implements Serializable {
     private AppUser instructor;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "occurrenceEvent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Attendance> attendances = new ArrayList<>();
+    private Set<Attendance> attendances = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "occurrence_event_participants",
-            joinColumns = @JoinColumn(name = "occurrence_event_id"),
-            inverseJoinColumns = @JoinColumn(name = "app_user_id")
-    )
-    private List<AppUser> participants = new ArrayList<>();
+    @JoinTable(name = "occurrence_event_participants", joinColumns = @JoinColumn(name = "occurrence_event_id"), inverseJoinColumns = @JoinColumn(name = "app_user_id"))
+    private Set<AppUser> participants = new HashSet<>();
 
     public LocalDateTime getEnd() {
-        return start.plusMinutes(durationMinutes);
-    }
-
-    public boolean isModified() {
-        return !start.equals(event.getStart()) ||
-                !durationMinutes.equals(event.getDurationMinutes()) ||
-                canceled ||
-                excluded ||
-                (instructor != null && !instructor.equals(event.getInstructor()));
-    }
-
-    @PrePersist
-    @PreUpdate
-    private void setDefaults() {
-        if (durationMinutes == null) {
-            durationMinutes = event.getDurationMinutes();
-        }
-        if (maxParticipants == 0) {
-            maxParticipants = event.getMaxParticipants();
-        }
-        if (instructor == null) {
-            instructor = event.getInstructor();
-        }
+        return meetingDate.plusMinutes(event.getDurationMinutes());
     }
 }
