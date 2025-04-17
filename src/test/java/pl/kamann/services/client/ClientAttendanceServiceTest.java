@@ -3,12 +3,14 @@ package pl.kamann.services.client;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
-import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.entities.attendance.AttendanceStatus;
-import pl.kamann.entities.event.OccurrenceEvent;
-import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.config.exception.services.EventLookupService;
-import pl.kamann.config.exception.services.UserLookupService;
+import pl.kamann.domain.attendance.ClientAttendanceService;
+import pl.kamann.domain.membershipcard.ClientMembershipCardService;
+import pl.kamann.infrastructure.handler.ApiException;
+import pl.kamann.domain.attendance.AttendanceStatus;
+import pl.kamann.domain.event.OccurrenceEvent;
+import pl.kamann.domain.attendance.AttendanceRepository;
+import pl.kamann.domain.event.EventLookupService;
+import pl.kamann.domain.appuser.UserLookupService;
 
 import java.time.LocalDateTime;
 

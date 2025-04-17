@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import pl.kamann.config.security.jwt.JwtUtils;
+import pl.kamann.infrastructure.security.jwt.JwtUtils;
 
 @Configuration
 @Profile("test")

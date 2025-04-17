@@ -5,10 +5,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
-import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.entities.membershipcard.MembershipCard;
-import pl.kamann.entities.membershipcard.MembershipCardType;
-import pl.kamann.repositories.MembershipCardRepository;
+import pl.kamann.domain.membershipcard.AdminMembershipCardService;
+import pl.kamann.infrastructure.handler.ApiException;
+import pl.kamann.domain.membershipcard.MembershipCard;
+import pl.kamann.domain.membershipcard.MembershipCardType;
+import pl.kamann.domain.membershipcard.MembershipCardRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

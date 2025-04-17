@@ -2,8 +2,8 @@ package pl.kamann.utility.dataseed;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import pl.kamann.entities.event.EventDifficulty;
-import pl.kamann.entities.event.EventType;
+import pl.kamann.domain.event.EventDifficulty;
+import pl.kamann.domain.event.EventType;
 
 import java.time.LocalDateTime;
 
