@@ -15,7 +15,7 @@ import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventDifficulty;
-import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.SchedulingStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.*;
@@ -171,14 +171,13 @@ public class DataSeeder {
         return eventRepository.save(Event.builder()
                 .title(eventData.getTitle())
                 .description(eventData.getDescription())
-                .start(eventData.getStart())
+                .releaseDate(eventData.getStart())
                 .durationMinutes(eventData.getDuration())
                 .maxParticipants(eventData.getMaxParticipants())
                 .eventType(eventData.getEventType())
-                .eventTypeName(eventData.getEventType().getName())
                 .createdBy(admin)
                 .instructor(instructor)
-                .status(EventStatus.SCHEDULED)
+                .schedulingStatus(SchedulingStatus.SCHEDULED)
                 .rrule(eventData.getRecurrenceRule())
                 .eventDifficulty(eventData.getEventDifficulty())
                 .build());

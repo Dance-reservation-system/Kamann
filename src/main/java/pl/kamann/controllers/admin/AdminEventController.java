@@ -14,7 +14,7 @@ import pl.kamann.dtos.event.EventUpdateRequest;
 import pl.kamann.dtos.event.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
-import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.SchedulingStatus;
 import pl.kamann.services.admin.AdminEventService;
 
 @RestController
@@ -67,7 +67,7 @@ public class AdminEventController {
     )
     public ResponseEntity<EventCancelResponse> cancelEvent(
             @PathVariable Long id) {
-        adminEventService.cancelEvent(id, EventStatus.CANCELED);
+        adminEventService.cancelEvent(id, SchedulingStatus.COMPLETED);
         return ResponseEntity.ok(new EventCancelResponse(id, "Event successfully canceled."));
     }
 

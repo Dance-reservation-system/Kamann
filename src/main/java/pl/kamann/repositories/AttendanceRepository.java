@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
-import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;
 
 import java.time.LocalDateTime;
@@ -19,7 +18,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     Optional<Attendance> findByUserAndOccurrenceEvent(AppUser user, OccurrenceEvent occurrenceEvent);
 
-    @Query("SELECT a FROM Attendance a WHERE a.user = :user AND a.occurrenceEvent.start > :dateTime")
+    @Query("SELECT a FROM Attendance a WHERE a.user = :user AND a.occurrenceEvent.meetingDate > :dateTime")
     List<Attendance> findByUserAndOccurrenceEventStartAfter(
             @Param("user") AppUser user,
             @Param("dateTime") LocalDateTime dateTime
@@ -38,16 +37,16 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Map<String, Object> calculateStatistics(@Param("eventId") Long eventId, @Param("userId") Long userId);
 
     @Query("""
-        SELECT a 
-        FROM Attendance a 
+        SELECT a
+        FROM Attendance a
         WHERE a.occurrenceEvent.event.id = :eventId 
         AND a.occurrenceEvent.instructor.id = :instructorId
     """)
     List<Attendance> findAllByEventAndInstructor(@Param("eventId") Long eventId, @Param("instructorId") Long instructorId);
 
     @Query("""
-        SELECT a 
-        FROM Attendance a 
+        SELECT a
+        FROM Attendance a
         WHERE a.occurrenceEvent = :occurrenceEvent 
         AND a.user.id = :userId
     """)

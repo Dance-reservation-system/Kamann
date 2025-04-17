@@ -11,7 +11,7 @@ public class DailyRecurrenceStrategy implements RecurrenceStrategy {
     @Override
     public List<LocalDateTime> generateOccurrences(Event event, LocalDateTime until) {
         List<LocalDateTime> occurrences = new ArrayList<>();
-        LocalDateTime current = event.getStart();
+        LocalDateTime current = event.getReleaseDate();
 
         while (!current.isAfter(until)) {
             occurrences.add(current);

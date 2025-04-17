@@ -1,7 +1,7 @@
 package pl.kamann.dtos.event;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.SchedulingStatus;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +12,6 @@ public record CreateEventResponse(
         String title,
         LocalDateTime start,
         Integer durationMinutes,
-        EventStatus status
+        SchedulingStatus status
 ) {
 }

@@ -15,7 +15,7 @@ class DailyRecurrenceStrategyTest {
         RecurrenceStrategy strategy = new DailyRecurrenceStrategy();
         LocalDateTime eventStart = LocalDateTime.of(2025, 2, 1, 10, 0);
         Event event = new Event();
-        event.setStart(eventStart);
+        event.setReleaseDate(eventStart);
 
         LocalDateTime until = LocalDateTime.of(2025, 2, 5, 10, 0);
 
@@ -32,7 +32,7 @@ class DailyRecurrenceStrategyTest {
         RecurrenceStrategy strategy = new DailyRecurrenceStrategy();
         LocalDateTime eventStart = LocalDateTime.of(2025, 3, 1, 9, 0);
         Event event = new Event();
-        event.setStart(eventStart);
+        event.setReleaseDate(eventStart);
 
         LocalDateTime until = eventStart;
 
@@ -47,7 +47,7 @@ class DailyRecurrenceStrategyTest {
         RecurrenceStrategy strategy = new DailyRecurrenceStrategy();
         LocalDateTime eventStart = LocalDateTime.of(2025, 4, 1, 12, 0);
         Event event = new Event();
-        event.setStart(eventStart);
+        event.setReleaseDate(eventStart);
 
         LocalDateTime until = LocalDateTime.of(2025, 3, 31, 12, 0);
 

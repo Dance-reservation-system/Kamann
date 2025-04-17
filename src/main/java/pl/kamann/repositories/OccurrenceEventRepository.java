@@ -14,12 +14,12 @@ import java.util.List;
 
 public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent, Long> {
 
-    @Query("SELECT o.start FROM OccurrenceEvent o WHERE o.event.id = :eventId")
+    @Query("SELECT o.meetingDate FROM OccurrenceEvent o WHERE o.event.id = :eventId")
     List<LocalDateTime> findStartDatesByEventId(@Param("eventId") Long eventId);
 
     List<OccurrenceEvent> findOccurrencesByEventId(Long eventId);
 
-    List<OccurrenceEvent> findByEventAndStartAfter(Event event, LocalDateTime dateTime);
+    List<OccurrenceEvent> findByEventAndMeetingDateAfter(Event event, LocalDateTime meetingDate);
 
     boolean existsByEvent(Event event);
 
@@ -27,9 +27,9 @@ public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent
 
     @Query("""
             SELECT o FROM OccurrenceEvent o
-            WHERE (:scope = 'UPCOMING' AND o.start >= CURRENT_TIMESTAMP AND :user MEMBER OF o.participants)
-               OR (:scope = 'AVAILABLE' AND o.start >= CURRENT_TIMESTAMP AND :user NOT MEMBER OF o.participants)
-               OR (:scope = 'PAST' AND o.start < CURRENT_TIMESTAMP)
+            WHERE (:scope = 'UPCOMING' AND o.meetingDate >= CURRENT_TIMESTAMP AND :user MEMBER OF o.participants)
+               OR (:scope = 'AVAILABLE' AND o.meetingDate >= CURRENT_TIMESTAMP AND :user NOT MEMBER OF o.participants)
+               OR (:scope = 'PAST' AND o.meetingDate < CURRENT_TIMESTAMP)
             """)
     Page<OccurrenceEvent> findFilteredOccurrences(
             @Param("scope") String scope,

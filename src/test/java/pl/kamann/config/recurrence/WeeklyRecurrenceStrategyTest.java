@@ -12,7 +12,7 @@ class WeeklyRecurrenceStrategyTest {
         RecurrenceStrategy strategy = new WeeklyRecurrenceStrategy();
         LocalDateTime eventStart = LocalDateTime.of(2025, 2, 1, 10, 0);
         Event event = new Event();
-        event.setStart(eventStart);
+        event.setReleaseDate(eventStart);
         LocalDateTime until = LocalDateTime.of(2025, 2, 15, 10, 0);
         List<LocalDateTime> occurrences = strategy.generateOccurrences(event, until);
         assertEquals(3, occurrences.size());

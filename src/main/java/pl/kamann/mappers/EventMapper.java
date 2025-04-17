@@ -36,7 +36,7 @@ public interface EventMapper {
 
     @Mapping(target = "createdBy", expression = "java(userLookupService.getLoggedInUser())")
     @Mapping(target = "instructor", expression = "java(userLookupService.findUserById(request.instructorId()))")
-    @Mapping(target = "status", expression = "java(EventStatus.SCHEDULED)")
+    @Mapping(target = "schedulingStatus", expression = "java(SchedulingStatus.SCHEDULED)")
     Event toEvent(CreateEventRequest request, @Context UserLookupService userLookupService);
 
     CreateEventResponse toCreateEventResponse(Event event);
