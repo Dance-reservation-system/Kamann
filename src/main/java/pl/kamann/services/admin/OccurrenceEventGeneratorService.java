@@ -40,9 +40,7 @@ public class OccurrenceEventGeneratorService {
     private OccurrenceEvent createOccurrence(Event event, LocalDateTime start) {
         return OccurrenceEvent.builder()
                 .event(event)
-                .start(start)
-                .durationMinutes(event.getDurationMinutes())
-                .maxParticipants(event.getMaxParticipants())
+                .meetingDate(start)
                 .instructor(event.getInstructor())
                 .seriesIndex(0)
                 .build();

@@ -26,13 +26,13 @@ class OccurrenceEventMapperTest {
         Event event = Event.builder()
                 .id(50L)
                 .title("Evening Pilates")
+                .durationMinutes(90)
                 .build();
-        LocalDateTime start = LocalDateTime.of(2025, 5, 10, 18, 0);
+        LocalDateTime meetingDate = LocalDateTime.of(2025, 5, 10, 18, 0);
         OccurrenceEvent occ = OccurrenceEvent.builder()
                 .id(200L)
                 .event(event)
-                .start(start)
-                .durationMinutes(90)
+                .meetingDate(meetingDate)
                 .instructor(instructor)
                 .build();
 
@@ -40,8 +40,8 @@ class OccurrenceEventMapperTest {
 
         assertEquals(occ.getEvent().getId(), lightDto.eventId());
         assertEquals(occ.getId(), lightDto.occurrenceId());
-        assertEquals(occ.getStart(), lightDto.start());
-        assertEquals(occ.getStart().plusMinutes(occ.getDurationMinutes()), lightDto.end());
+        assertEquals(occ.getMeetingDate(), lightDto.start());
+        assertEquals(occ.getMeetingDate().plusMinutes(occ.getEvent().getDurationMinutes()), lightDto.end());
         assertEquals(event.getTitle(), lightDto.title());
         assertEquals("Jane Smith", lightDto.instructorName());
     }
@@ -57,30 +57,28 @@ class OccurrenceEventMapperTest {
                 .id(50L)
                 .title("Evening Pilates")
                 .eventType(type)
-                .start(start)
+                .releaseDate(start)
+                .maxParticipants(15)
                 .durationMinutes(90)
                 .instructor(instructor)
                 .build();
         OccurrenceEvent occ = OccurrenceEvent.builder()
                 .id(200L)
                 .event(event)
-                .start(start)
-                .durationMinutes(90)
+                .meetingDate(start)
                 .instructor(instructor)
                 .createdBy(creator)
                 .seriesIndex(0)
-                .maxParticipants(15)
-                .attendances(Collections.emptyList())
+                .attendances(Collections.emptySet())
                 .build();
 
         OccurrenceEventDto dto = occurrenceEventMapper.toOccurrenceEventDto(occ);
 
         assertEquals(event.getId(), dto.eventId());
-        assertEquals(start.toLocalDate(), dto.date());
+        assertEquals(start.toLocalDate(), dto.meetingDate());
         assertEquals(start.toLocalTime(), dto.startTime());
         assertEquals(start.plusMinutes(90).toLocalTime(), dto.endTime());
         assertEquals(90, dto.durationMinutes());
-        assertFalse(dto.canceled());
         assertEquals(instructor.getId(), dto.instructorId());
         assertEquals(creator.getId(), dto.createdById());
         assertEquals(0, dto.seriesIndex());

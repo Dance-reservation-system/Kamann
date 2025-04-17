@@ -13,29 +13,27 @@ public record OccurrenceEventDto(
         @NotNull(message = "Event ID cannot be null")
         Long eventId,
 
+        String eventTypeName,
+
+        Integer durationMinutes,
+
+        int maxParticipants,
+
         @NotNull(message = "Date cannot be null")
-        LocalDate date,
+        LocalDate meetingDate,
 
         @NotNull(message = "Start time cannot be null")
         LocalTime startTime,
 
         LocalTime endTime,
 
-        int durationMinutes,
-
-        boolean canceled,
-
         Long instructorId,
+
+        String instructorFullName,
 
         Long createdById,
 
         int seriesIndex,
-
-        int maxParticipants,
-
-        String eventTypeName,
-
-        String instructorFullName,
 
         boolean isModified,
 
