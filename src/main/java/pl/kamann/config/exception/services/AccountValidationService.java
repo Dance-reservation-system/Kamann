@@ -82,7 +82,7 @@ public class AccountValidationService {
     }
 
     public void validateClient(Set<Role> roles) {
-        if(roles.contains("CLIENT")) {
+        if(!roles.stream().getClass().getName().contains("CLIENT")) {
             throw new ApiException("User is not a Client",
                     HttpStatus.BAD_REQUEST,
                     StatusCodes.INVALID_INPUT.name());
@@ -90,7 +90,7 @@ public class AccountValidationService {
     }
 
     public void validateInstructor(Set<Role> roles) {
-        if(!roles.contains("INSTRUCTOR")) {
+        if(!roles.stream().getClass().getName().contains("INSTRUCTOR")) {
             throw new ApiException("User is not a Client",
                     HttpStatus.BAD_REQUEST,
                     StatusCodes.INVALID_INPUT.name());
