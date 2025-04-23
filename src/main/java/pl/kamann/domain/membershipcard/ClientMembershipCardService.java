@@ -1,12 +1,15 @@
 package pl.kamann.domain.membershipcard;
 
-import jakarta.transaction.Transactional;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import pl.kamann.application.auth.GetLoggedInUserService;
+import pl.kamann.domain.appuser.AppUser;
+import pl.kamann.domain.appuser.lookup.UserLookupService;
 import pl.kamann.domain.membershipcard.exception.MembershipCardCodes;
 import pl.kamann.infrastructure.handler.ApiException;
-import pl.kamann.domain.appuser.UserLookupService;
 
 import java.util.List;
 
@@ -16,33 +19,26 @@ public class ClientMembershipCardService {
 
     private final MembershipCardRepository membershipCardRepository;
     private final MembershipCardService membershipCardService;
+    private final GetLoggedInUserService getLoggedInUser;
     private final UserLookupService userLookupService;
 
     @Transactional
-    public MembershipCard requestMembershipCard(Long cardId) {
-        var loggedInUser = userLookupService.getLoggedInUser();
-        var client = userLookupService.findUserById(loggedInUser.getId());
+    public MembershipCard requestMembershipCard(Long cardId, HttpServletRequest request) {
+        AppUser client = extractClientFromRequest(request);
+        assertClientHasNoActiveCard(client.getId());
 
-        if (membershipCardRepository.findActiveCardByUserId(loggedInUser.getId()).isPresent()) {
-            throw new ApiException(
-                    "Client already has an active membership card.",
-                    HttpStatus.BAD_REQUEST,
-                    MembershipCardCodes.CARD_ALREADY_EXISTS.name()
-            );
-        }
-
-        var cardTemplate = membershipCardRepository.findById(cardId)
+        MembershipCard template = membershipCardRepository.findById(cardId)
                 .orElseThrow(() -> new ApiException(
                         "Membership card not found.",
                         HttpStatus.NOT_FOUND,
                         MembershipCardCodes.CARD_NOT_FOUND.name()
                 ));
 
-        MembershipCard clientCard = MembershipCard.builder()
+        MembershipCard card = MembershipCard.builder()
                 .user(client)
-                .membershipCardType(cardTemplate.getMembershipCardType())
-                .entrancesLeft(cardTemplate.getMembershipCardType().getMaxEntrances())
-                .price(cardTemplate.getPrice())
+                .membershipCardType(template.getMembershipCardType())
+                .entrancesLeft(template.getMembershipCardType().getMaxEntrances())
+                .price(template.getPrice())
                 .startDate(null)
                 .endDate(null)
                 .paid(false)
@@ -50,7 +46,7 @@ public class ClientMembershipCardService {
                 .pendingApproval(true)
                 .build();
 
-        return membershipCardRepository.save(clientCard);
+        return membershipCardRepository.save(card);
     }
 
     public List<MembershipCard> getAvailableMembershipCards() {
@@ -58,9 +54,9 @@ public class ClientMembershipCardService {
     }
 
     public MembershipCard getActiveCard(Long clientId) {
-        List<MembershipCard> activeCards = membershipCardRepository.findByUserIdAndActiveTrue(clientId);
+        List<MembershipCard> cards = membershipCardRepository.findByUserIdAndActiveTrue(clientId);
 
-        if (activeCards.isEmpty()) {
+        if (cards.isEmpty()) {
             throw new ApiException(
                     "No active membership card found.",
                     HttpStatus.NOT_FOUND,
@@ -68,7 +64,7 @@ public class ClientMembershipCardService {
             );
         }
 
-        if (activeCards.size() > 1) {
+        if (cards.size() > 1) {
             throw new ApiException(
                     "Multiple active membership cards found.",
                     HttpStatus.CONFLICT,
@@ -76,7 +72,27 @@ public class ClientMembershipCardService {
             );
         }
 
-        return activeCards.get(0);
+        return cards.getFirst();
+    }
+
+    public MembershipCard getActiveCardForLoggedInUser(HttpServletRequest request) {
+        AppUser client = extractClientFromRequest(request);
+        return getActiveCard(client.getId());
+    }
+
+    private AppUser extractClientFromRequest(HttpServletRequest request) {
+        var dto = getLoggedInUser.getLoggedInUser(request);
+        return userLookupService.findUserById(dto.id());
+    }
+
+    private void assertClientHasNoActiveCard(Long clientId) {
+        if (membershipCardRepository.findActiveCardByUserId(clientId).isPresent()) {
+            throw new ApiException(
+                    "Client already has an active membership card.",
+                    HttpStatus.BAD_REQUEST,
+                    MembershipCardCodes.CARD_ALREADY_EXISTS.name()
+            );
+        }
     }
 
     @Transactional
@@ -95,8 +111,6 @@ public class ClientMembershipCardService {
         membershipCardRepository.save(activeCard);
 
         membershipCardService.logAction(activeCard, activeCard.getUser(), MembershipCardAction.USED, 1);
-
-
         return activeCard;
     }
 }

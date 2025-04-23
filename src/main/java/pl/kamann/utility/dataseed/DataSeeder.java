@@ -3,22 +3,29 @@ package pl.kamann.utility.dataseed;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.kamann.domain.appuser.RoleRepository;
-import pl.kamann.domain.attendance.AttendanceRepository;
-import pl.kamann.domain.authuser.AuthUserRepository;
-import pl.kamann.domain.event.*;
-import pl.kamann.domain.appuser.UserLookupService;
+import pl.kamann.application.auth.PasswordHasher;
 import pl.kamann.domain.appuser.AppUser;
-import pl.kamann.domain.appuser.AppUserRepository;
 import pl.kamann.domain.appuser.Role;
-import pl.kamann.domain.authuser.AuthUser;
-import pl.kamann.domain.authuser.AuthUserStatus;
+import pl.kamann.domain.appuser.lookup.UserLookupService;
+import pl.kamann.domain.appuser.repository.AppUserRepository;
+import pl.kamann.domain.appuser.repository.RoleRepository;
 import pl.kamann.domain.attendance.Attendance;
-import pl.kamann.domain.attendance.AttendanceStatus;
-import pl.kamann.domain.event.AdminEventService;
+import pl.kamann.domain.attendance.AttendanceRepository;
+import pl.kamann.domain.authuser.AuthUser;
+import pl.kamann.domain.authuser.AuthUserRepository;
+import pl.kamann.domain.authuser.Email;
+import pl.kamann.domain.authuser.Password;
+import pl.kamann.domain.event.Event;
+import pl.kamann.domain.event.EventDifficulty;
+import pl.kamann.domain.event.EventRepository;
+import pl.kamann.domain.event.EventStatus;
+import pl.kamann.domain.event.EventType;
+import pl.kamann.domain.event.EventTypeRepository;
+import pl.kamann.domain.event.OccurrenceEvent;
+import pl.kamann.domain.event.OccurrenceEventGenerator;
+import pl.kamann.domain.event.OccurrenceEventRepository;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -37,15 +44,15 @@ public class DataSeeder {
     private final AuthUserRepository authUserRepository;
     private final EventTypeRepository eventTypeRepository;
     private final EventRepository eventRepository;
-    private final PasswordEncoder passwordEncoder;
     private final OccurrenceEventRepository occurrenceEventRepository;
     private final AttendanceRepository attendanceRepository;
-    private final AdminEventService adminEventService;
+    private final OccurrenceEventGenerator occurrenceEventGenerator;
     private final UserLookupService userLookupService;
+    private final PasswordHasher passwordHasher;
 
-    Role adminRole = new Role("ADMIN");
-    Role instructorRole = new Role("INSTRUCTOR");
-    Role clientRole = new Role("CLIENT");
+    Role adminRole = Role.of("ADMIN");
+    Role instructorRole = Role.of("INSTRUCTOR");
+    Role clientRole = Role.of("CUSTOMER");
 
     AppUser client;
     List<EventData> events;
@@ -88,27 +95,19 @@ public class DataSeeder {
 
     private void createClients() {
         IntStream.range(2, 5)
-                .forEach(i -> {
-                    createUser("client" + i + "@client.com", "Client" + i, "Test", Set.of(clientRole));
-                });
+                .forEach(i -> createUser("client" + i + "@client.com", "Client" + i, "Test", Set.of(clientRole)));
     }
 
-    private AuthUser createAuthUser(String email, Set<Role> role) {
-        return authUserRepository.save(AuthUser.builder()
-                .email(email)
-                .password(passwordEncoder.encode("admin"))
-                .status(AuthUserStatus.ACTIVE)
-                .enabled(true)
-                .roles(role)
-                .build());
+    private AuthUser createAuthUser(String value, Set<Role> roles) {
+        Email email = new Email(value);
+        Password password = new Password("admin", passwordHasher);
+        AuthUser authUser = AuthUser.create(email, password, roles);
+        authUserRepository.save(authUser);
+        return authUser;
     }
 
     private AppUser createAppUser(String firstName, String lastName, AuthUser authUser) {
-        return appUserRepository.save(AppUser.builder()
-                .firstName(firstName)
-                .lastName(lastName)
-                .authUser(authUser)
-                .build());
+        return appUserRepository.save(AppUser.create(firstName, lastName, authUser));
     }
 
     private AppUser createUser(String email, String firstName, String lastName, Set<Role> roles) {
@@ -129,8 +128,12 @@ public class DataSeeder {
     }
 
     private void seedEvents() {
-        AppUser admin = userLookupService.findUserByEmail("studiokamann@gmail.com");
-        AppUser instructor = userLookupService.findUserByEmail("instructor1@yoga.com");
+        AppUser admin = userLookupService.findUserByEmail("studiokamann@gmail.com")
+                .orElseThrow(() -> new IllegalStateException("Admin user not found"));
+
+        AppUser instructor = userLookupService.findUserByEmail("instructor1@yoga.com")
+                .orElseThrow(() -> new IllegalStateException("Instructor user not found"));
+
 
         Map<String, EventType> eventTypes = Map.of(
                 "Yoga", getEventType("Yoga"),
@@ -148,9 +151,7 @@ public class DataSeeder {
             new EventData("Evening Pole Dance", "Weekly pole dance classes", LocalDateTime.now().plusDays(3).withHour(19).withMinute(0), 75, 12, eventTypes.get("PoleDance"), "FREQ=WEEKLY;BYDAY=TU,TH;INTERVAL=1;COUNT=10", EventDifficulty.BEGINNER)
         );
 
-        events.forEach(event -> {
-            createEventWithOccurrences(event, admin, instructor);
-        });
+        events.forEach(event -> createEventWithOccurrences(event, admin, instructor));
     }
 
     private EventType getEventType(String name) {
@@ -159,7 +160,7 @@ public class DataSeeder {
 
     private void createEventWithOccurrences(EventData eventData, AppUser admin, AppUser instructor) {
         Event event = createEvent(eventData, admin, instructor);
-        List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
+        List<OccurrenceEvent> occurrenceEvents = occurrenceEventGenerator.generateOccurrences(event);
 
         if (!occurrenceEvents.isEmpty()) {
             occurrenceEventRepository.saveAll(occurrenceEvents);
@@ -203,10 +204,7 @@ public class DataSeeder {
     }
 
     private void createAttendance(AppUser client, OccurrenceEvent occurrence) {
-        attendanceRepository.save(Attendance.builder()
-                .user(client)
-                .occurrenceEvent(occurrence)
-                .status(AttendanceStatus.REGISTERED)
-                .build());
+        Attendance attendance = Attendance.create(client, occurrence);
+        attendanceRepository.save(attendance);
     }
 }

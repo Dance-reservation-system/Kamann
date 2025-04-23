@@ -48,5 +48,5 @@ public class Role implements Serializable {
 
     public static final Role ADMIN = new Role("ADMIN");
     public static final Role INSTRUCTOR = new Role("INSTRUCTOR");
-    public static final Role USER = new Role("USER");
+    public static final Role CUSTOMER = new Role("CUSTOMER");
 }

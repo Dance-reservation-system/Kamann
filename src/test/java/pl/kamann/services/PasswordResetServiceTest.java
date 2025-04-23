@@ -17,7 +17,7 @@
 //import pl.kamann.domain.appuser.AppUser;
 //import pl.kamann.domain.authuser.AuthUser;
 //import pl.kamann.domain.authuser.TokenType;
-//import pl.kamann.domain.appuser.AppUserRepository;
+//import pl.kamann.domain.appuser.repository.AppUserRepository;
 //import pl.kamann.domain.authuser.AuthUserRepository;
 //import pl.kamann.services.email.EmailSender;
 //

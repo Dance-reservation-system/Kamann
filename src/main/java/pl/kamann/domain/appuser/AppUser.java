@@ -1,7 +1,22 @@
+/**
+ * Ubiquitous Language Summary:
+ * Aggregate root representing a domain user. Manages identity, personal details,
+ * and delegates authentication-related transitions to encapsulate user lifecycle behavior.
+ */
 package pl.kamann.domain.appuser;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import pl.kamann.domain.authuser.AuthUser;
+import pl.kamann.domain.authuser.AuthUserStatus;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -9,12 +24,16 @@ import java.util.Objects;
 @Entity
 public class AppUser implements Serializable {
 
+    @Serial
+    private static final long serialVersionUID = 1;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private Long authUserId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "auth_user_id", nullable = false)
+    private AuthUser authUser;
 
     @Column(nullable = false)
     private String firstName;
@@ -29,59 +48,54 @@ public class AppUser implements Serializable {
 
     private LocalDateTime updatedAt;
 
-    private AppUser() {
+    protected AppUser() {
     }
 
-    private AppUser(String firstName, String lastName, String phone, Long authUserId) {
-        this.firstName = Objects.requireNonNull(firstName, "First name cannot be null");
-        this.lastName = Objects.requireNonNull(lastName, "Last name cannot be null");
-        this.phone = phone;
-        this.authUserId = authUserId;
+    private AppUser(AppUserProfile profile, AuthUser authUser) {
+        this.firstName = profile.firstName();
+        this.lastName = profile.lastName();
+        this.phone = profile.phone();
+        this.authUser = Objects.requireNonNull(authUser, "AuthUser cannot be null");
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
-    public static AppUser create(String firstName, String lastName, String phone, Long authUserId) {
-        return new AppUser(firstName, lastName, phone, authUserId);
+    public static AppUser create(AppUserProfile profile, AuthUser authUser) {
+        return new AppUser(profile, authUser);
     }
 
     public void changePhone(String newPhone) {
         if (newPhone != null && !newPhone.trim().isEmpty()) {
             this.phone = newPhone;
             this.updatedAt = LocalDateTime.now();
-        } else {
-            throw new IllegalArgumentException("Phone number cannot be empty.");
         }
     }
 
-    public void changeFirstName(String newFirstName) {
-        if (newFirstName != null && !newFirstName.trim().isEmpty()) {
-            this.firstName = newFirstName;
-            this.updatedAt = LocalDateTime.now();
-        } else {
-            throw new IllegalArgumentException("First name cannot be empty.");
+    public void activate() {
+        this.authUser.activate();
+    }
+
+    public void deactivate() {
+        this.authUser.deactivate();
+    }
+
+    public void finalizeAccountIfInactive() {
+        if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
+            authUser.deactivate();
+            authUser.finalizeDeletion();
         }
     }
 
-    public void changeLastName(String newLastName) {
-        if (newLastName != null && !newLastName.trim().isEmpty()) {
-            this.lastName = newLastName;
-            this.updatedAt = LocalDateTime.now();
-        } else {
-            throw new IllegalArgumentException("Last name cannot be empty.");
-        }
+    public void changeStatus(AuthUserStatus status) {
+        this.authUser.changeStatus(status);
+    }
+
+    public AuthUser getAuthUser() {
+        return authUser;
     }
 
     public Long getId() {
         return id;
-    }
-
-    public Long getAuthUserId() {
-        return authUserId;
-    }
-
-    public void setAuthUserId(Long authUserId) {
-        this.authUserId = authUserId;
     }
 
     public String getFirstName() {
@@ -104,16 +118,16 @@ public class AppUser implements Serializable {
         return updatedAt;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AppUser appUser = (AppUser) o;
-        return Objects.equals(id, appUser.id);
+    public void startDeletion() {
+        this.authUser.startDeletion();
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
+    //todo used ONLY in data seeder
+    public static AppUser create(String firstName, String lastName, AuthUser authUser) {
+        AppUser user = new AppUser();
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.authUser = authUser;
+        return user;
     }
 }

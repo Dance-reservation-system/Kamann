@@ -1,44 +1,46 @@
+/**
+ * Ubiquitous Language Summary:
+ * Domain coordination factory that builds the full user aggregate structure,
+ * linking AppUser and AuthUser based on raw input.
+ */
 package pl.kamann.domain.user;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import pl.kamann.domain.authuser.dto.RegisterRequest;
+import org.springframework.stereotype.Component;
+import pl.kamann.application.auth.PasswordHasher;
 import pl.kamann.domain.appuser.AppUser;
+import pl.kamann.domain.appuser.AppUserFactory;
+import pl.kamann.domain.appuser.AppUserProfile;
 import pl.kamann.domain.authuser.AuthUser;
 import pl.kamann.domain.authuser.AuthUserStatus;
-import pl.kamann.domain.appuser.Role;
+import pl.kamann.domain.authuser.Email;
+import pl.kamann.domain.authuser.Password;
+import pl.kamann.infrastructure.security.RawAuthUserInput;
 
-import java.time.LocalDateTime;
-import java.util.Set;
-
+@Component
 @RequiredArgsConstructor
-@Service
 public class UserFactory {
 
-    private final PasswordEncoder passwordEncoder;
+    private final AppUserFactory appUserFactory;
+    private final PasswordHasher passwordHasher;
 
-    public AuthUser createAndLinkAuthWithApp(RegisterRequest request, Role role, AppUser appUser) {
-        AuthUser authUser = AuthUser.builder()
-                .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
-                .roles(Set.of(role))
-                .status(AuthUserStatus.PENDING)
-                .enabled(false)
-                .build();
+    public UserAggregate createFullUser(String firstName, String lastName, String phone, RawAuthUserInput rawUser) {
+        AppUserProfile profile = AppUserProfile.create(firstName, lastName, phone);
+        AppUser appUser = appUserFactory.create(profile, null);
 
-        authUser.setAppUser(appUser);
-        appUser.setAuthUser(authUser);
+        Email email = new Email(rawUser.email());
+        Password password = new Password(rawUser.password(), passwordHasher);
 
-        return authUser;
+        AuthUser authUser = AuthUser.create(
+                email,
+                password,
+                rawUser.roles(),
+                AuthUserStatus.PENDING_CONFIRMATION,
+                appUser
+        );
+
+        return new UserAggregate(authUser, appUser);
     }
 
-    public AppUser createAppUser(RegisterRequest request) {
-        return AppUser.builder()
-                        .firstName(request.firstName())
-                        .lastName(request.lastName())
-                        .createdAt(LocalDateTime.now())
-                        .phone(request.phone())
-                        .build();
-    }
+    public record UserAggregate(AuthUser authUser, AppUser appUser) {}
 }

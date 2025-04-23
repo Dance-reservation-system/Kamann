@@ -1,19 +1,26 @@
+/**
+ * Ubiquitous Language Summary:
+ * Application-level infrastructure service that handles password reset flow,
+ * including token issuance, email delivery, and password update.
+ */
 package pl.kamann.infrastructure.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.kamann.application.auth.PasswordHasher;
+import pl.kamann.application.security.TokenProvider;
 import pl.kamann.domain.authuser.AuthCodes;
+import pl.kamann.domain.authuser.AuthUser;
+import pl.kamann.domain.authuser.AuthUserRepository;
+import pl.kamann.domain.authuser.Email;
+import pl.kamann.domain.authuser.Password;
+import pl.kamann.domain.authuser.TokenType;
+import pl.kamann.infrastructure.email.EmailSender;
 import pl.kamann.infrastructure.handler.ApiException;
 import pl.kamann.infrastructure.security.jwt.JwtUtils;
-import pl.kamann.domain.authuser.AuthUser;
-import pl.kamann.domain.authuser.TokenType;
-import pl.kamann.domain.authuser.AuthUserRepository;
-import pl.kamann.infrastructure.email.EmailSender;
-import pl.kamann.infrastructure.security.jwt.TokenService;
 
 import java.util.Locale;
 
@@ -23,9 +30,9 @@ import java.util.Locale;
 public class PasswordResetService {
 
     private final AuthUserRepository authUserRepository;
-    private final TokenService tokenService;
+    private final TokenProvider tokenProvider;
     private final EmailSender emailSender;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordHasher passwordHasher;
     private final JwtUtils jwtUtils;
 
     @Transactional
@@ -40,7 +47,7 @@ public class PasswordResetService {
     }
 
     private AuthUser validateUserForReset(String email) {
-        AuthUser authUser = authUserRepository.findByEmail(email)
+        return authUserRepository.findByEmail(new Email(email))
                 .orElseThrow(() -> {
                     log.warn("Password reset attempt for non-existent email: {}", email);
                     return new ApiException(
@@ -49,24 +56,14 @@ public class PasswordResetService {
                             AuthCodes.USER_NOT_FOUND.name()
                     );
                 });
-
-        if (!authUser.isEnabled()) {
-            log.warn("Password reset requested for a disabled user: {}", email);
-            throw new ApiException(
-                    "Your account is not active. Please contact support.",
-                    HttpStatus.FORBIDDEN,
-                    AuthCodes.USER_NOT_ACTIVE.name()
-            );
-        }
-        return authUser;
     }
 
     private void sendResetPasswordEmail(AuthUser authUser) {
-        String token = tokenService.generateToken(authUser.getEmail(), TokenType.RESET_PASSWORD);
-        String resetLink = tokenService.generateLink(tokenService.getResetPasswordLink(), token);
+        String token = tokenProvider.generateTokenForType(authUser.getEmail(), TokenType.RESET_PASSWORD);
+        String resetLink = tokenProvider.generateVerificationLink("/reset-password?token=", token);
 
         log.info("Sending reset password email to: {}", authUser.getEmail());
-        emailSender.sendEmail(authUser.getEmail(), resetLink, Locale.ENGLISH, "reset.password");
+        emailSender.sendEmail(authUser.getEmail().getValue(), resetLink, Locale.ENGLISH, "reset.password");
     }
 
     @Transactional
@@ -79,7 +76,7 @@ public class PasswordResetService {
         if (jwtUtils.validateToken(token, TokenType.RESET_PASSWORD)) {
             String email = jwtUtils.extractEmail(token);
 
-            AuthUser authUser = authUserRepository.findByEmail(email).orElseThrow(() ->
+            AuthUser authUser = authUserRepository.findByEmail(new Email(email)).orElseThrow(() ->
                     new ApiException(
                             "User not found",
                             HttpStatus.NOT_FOUND,
@@ -87,7 +84,7 @@ public class PasswordResetService {
                     )
             );
 
-            authUser.setPassword(passwordEncoder.encode(newPassword));
+            authUser.resetPassword(new Password(newPassword, passwordHasher));
             authUserRepository.save(authUser);
 
             log.info("Password reset successfully for email: {}", authUser.getEmail());

@@ -5,5 +5,6 @@ public enum AuthUserStatus {
     INACTIVE,
     PENDING,
     PENDING_DELETION,
+    PENDING_CONFIRMATION,
     DELETED
 }

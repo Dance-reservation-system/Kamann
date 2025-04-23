@@ -1,14 +1,15 @@
 package pl.kamann.domain.event;
 
-import pl.kamann.domain.event.dto.EventDto;
-import pl.kamann.domain.event.dto.EventLightDto;
-import pl.kamann.domain.event.dto.EventUpdateResponse;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import pl.kamann.domain.appuser.AppUser;
+import pl.kamann.domain.appuser.lookup.UserLookupService;
 import pl.kamann.domain.event.dto.CreateEventRequest;
 import pl.kamann.domain.event.dto.CreateEventResponse;
-import pl.kamann.domain.appuser.UserLookupService;
+import pl.kamann.domain.event.dto.EventDto;
+import pl.kamann.domain.event.dto.EventLightDto;
+import pl.kamann.domain.event.dto.EventUpdateResponse;
 
 @Mapper(componentModel = "spring")
 public interface EventMapper {
@@ -33,10 +34,10 @@ public interface EventMapper {
                 : 0;
     }
 
-    @Mapping(target = "createdBy", expression = "java(userLookupService.getLoggedInUser())")
+    @Mapping(target = "createdBy", expression = "java(loggedInUser)")
     @Mapping(target = "instructor", expression = "java(userLookupService.findUserById(request.instructorId()))")
     @Mapping(target = "status", expression = "java(EventStatus.SCHEDULED)")
-    Event toEvent(CreateEventRequest request, @Context UserLookupService userLookupService);
+    Event toEvent(CreateEventRequest request, @Context UserLookupService userLookupService, @Context AppUser loggedInUser);
 
     CreateEventResponse toCreateEventResponse(Event event);
 

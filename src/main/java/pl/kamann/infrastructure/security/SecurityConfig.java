@@ -6,7 +6,6 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,10 +34,14 @@ import java.util.List;
 public class SecurityConfig {
 
     private final HandlerExceptionResolver exceptionResolver;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Autowired
-    public SecurityConfig(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+    public SecurityConfig(
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver,
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) {
         this.exceptionResolver = exceptionResolver;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     private static final String[] PUBLIC_URLS = {
@@ -68,11 +71,6 @@ public class SecurityConfig {
     };
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(exceptionResolver);
-    }
-
-    @Bean
     @Profile(value = "prod")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return getSecurityFilterChain(http, corsConfigurationSourceProd());
@@ -97,7 +95,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler(new CustomAccessDeniedHandler())
                 )

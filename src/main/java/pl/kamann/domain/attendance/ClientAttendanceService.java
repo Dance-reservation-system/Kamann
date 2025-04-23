@@ -1,15 +1,18 @@
 package pl.kamann.domain.attendance;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import pl.kamann.infrastructure.handler.ApiException;
+import pl.kamann.application.auth.GetLoggedInUserService;
 import pl.kamann.domain.appuser.AppUser;
-import pl.kamann.domain.event.OccurrenceEvent;
+import pl.kamann.domain.appuser.dto.AppUserDto;
+import pl.kamann.domain.appuser.lookup.UserLookupService;
 import pl.kamann.domain.event.EventLookupService;
-import pl.kamann.domain.appuser.UserLookupService;
+import pl.kamann.domain.event.OccurrenceEvent;
 import pl.kamann.domain.membershipcard.ClientMembershipCardService;
+import pl.kamann.infrastructure.handler.ApiException;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -20,57 +23,53 @@ public class ClientAttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final ClientMembershipCardService clientMembershipCardService;
+    private final GetLoggedInUserService getLoggedInUser;
     private final EventLookupService eventLookupService;
     private final UserLookupService userLookupService;
 
     @Transactional
-    public Attendance joinEvent(Long occurrenceEventId) {
-        AppUser client = userLookupService.getLoggedInUser();
-        OccurrenceEvent occurrenceEvent = eventLookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
+    public Attendance joinEvent(Long occurrenceEventId, HttpServletRequest request) {
+        AppUserDto clientDto = getLoggedInUser.getLoggedInUser(request);
+        AppUser client = userLookupService.findUserById(clientDto.id());
+        OccurrenceEvent event = eventLookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
 
-        // Check if the client is already registered.
-        if (attendanceRepository.findByUserAndOccurrenceEvent(client, occurrenceEvent).isPresent()) {
-            throw new ApiException(
-                    "Client is already registered for the event.",
-                    HttpStatus.CONFLICT,
-                    AttendanceCodes.ALREADY_REGISTERED.name()
-            );
+        attendanceRepository.findByUserAndOccurrenceEvent(client, event).ifPresent(att -> {
+            throw new ApiException("Client already registered", HttpStatus.CONFLICT, AttendanceCodes.ALREADY_REGISTERED.name());
+        });
+
+        if (!event.hasCapacity()) {
+            throw new ApiException("Event is full", HttpStatus.BAD_REQUEST, AttendanceCodes.EVENT_FULL.name());
         }
 
-        // Deduct an entry from the client's membership card.
         clientMembershipCardService.deductEntry(client.getId());
 
-        // Create a new attendance record.
-        Attendance attendance = new Attendance();
-        attendance.setUser(client);
-        attendance.setOccurrenceEvent(occurrenceEvent);
-        attendance.setStatus(AttendanceStatus.REGISTERED);
-        occurrenceEvent.getParticipants().add(client);
-
+        Attendance attendance = Attendance.create(client, event);
+        event.registerParticipant(client);
         attendanceRepository.save(attendance);
 
         return attendance;
     }
 
     @Transactional
-    public Attendance cancelAttendance(Long occurrenceEventId) {
-        AppUser currentUser = userLookupService.getLoggedInUser();
-        OccurrenceEvent occurrenceEvent = eventLookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
+    public Attendance cancelAttendance(Long occurrenceEventId, HttpServletRequest request) {
+        AppUserDto clientDto = getLoggedInUser.getLoggedInUser(request);
+        AppUser currentUser = userLookupService.findUserById(clientDto.id());
+        OccurrenceEvent event = eventLookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
 
-        Attendance attendance = attendanceRepository.findByUserAndOccurrenceEvent(currentUser, occurrenceEvent)
+        Attendance attendance = attendanceRepository.findByUserAndOccurrenceEvent(currentUser, event)
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found for user and event",
                         HttpStatus.NOT_FOUND,
                         AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
                 ));
 
-        validateCancellation(occurrenceEvent);
+        validateCancellation(event);
 
-        AttendanceStatus cancellationStatus = determineCancellationStatus(occurrenceEvent);
+        AttendanceStatus cancellationStatus = determineCancellationStatus(event);
+        attendance.cancelWithStatus(cancellationStatus);
+        attendanceRepository.save(attendance);
 
-        updateAttendanceStatus(attendance, cancellationStatus);
-
-        publishCancellationEvent(attendance, occurrenceEvent, cancellationStatus);
+        publishCancellationEvent(attendance, event, cancellationStatus);
 
         return attendance;
     }
@@ -93,18 +92,12 @@ public class ClientAttendanceService {
         }
     }
 
-    private void updateAttendanceStatus(Attendance attendance, AttendanceStatus status) {
-        attendance.setStatus(status);
-        attendanceRepository.save(attendance);
-    }
-
     private void publishCancellationEvent(Attendance attendance, OccurrenceEvent occurrenceEvent,
                                           AttendanceStatus attendanceStatus) {
-        // TODO: Implement event publishing if needed.
+        // TODO: Implement event publishing
     }
 
     public Map<String, Object> getAttendanceSummary() {
-        // TODO: Implement attendance summary logic.
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 }

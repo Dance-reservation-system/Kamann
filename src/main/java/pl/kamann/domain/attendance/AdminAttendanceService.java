@@ -6,11 +6,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.kamann.domain.authuser.StatusCodes;
-import pl.kamann.infrastructure.handler.ApiException;
 import pl.kamann.domain.attendance.dto.AttendanceDetailsDto;
-import pl.kamann.domain.event.OccurrenceEvent;
+import pl.kamann.domain.authuser.StatusCodes;
 import pl.kamann.domain.event.EventLookupService;
+import pl.kamann.domain.event.OccurrenceEvent;
+import pl.kamann.infrastructure.handler.ApiException;
 
 import java.util.Map;
 
@@ -44,7 +44,7 @@ public class AdminAttendanceService {
                         AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
                 ));
 
-        attendance.setStatus(status);
+        attendance.overrideStatus(status);
         attendanceRepository.save(attendance);
     }
 

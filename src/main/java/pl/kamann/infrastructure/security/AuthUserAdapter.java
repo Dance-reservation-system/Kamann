@@ -3,30 +3,42 @@ package pl.kamann.infrastructure.security;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import pl.kamann.domain.appuser.Role;
 import pl.kamann.domain.authuser.AuthUser;
 
+import java.io.Serial;
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-record AuthUserAdapter(AuthUser authUser) implements UserDetails {
+public class AuthUserAdapter implements UserDetails {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    private final AuthUser authUser;
+
+    public AuthUserAdapter(AuthUser authUser) {
+        this.authUser = authUser;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authUser.getRoles().stream()
-                .map(Role::getName)
+        Set<String> roleNames = authUser.getRoles().stream()
+                .map(role -> "ROLE_" + role.getName())
+                .collect(Collectors.toSet());
+        return roleNames.stream()
                 .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
     @Override
     public String getPassword() {
-        return authUser.getPassword();
+        return authUser.getPassword().getValue();
     }
 
     @Override
     public String getUsername() {
-        return authUser.getEmail();
+        return authUser.getEmail().getValue();
     }
 
     @Override
@@ -47,5 +59,9 @@ record AuthUserAdapter(AuthUser authUser) implements UserDetails {
     @Override
     public boolean isEnabled() {
         return authUser.isEnabled();
+    }
+
+    public AuthUser getDomainUser() {
+        return this.authUser;
     }
 }

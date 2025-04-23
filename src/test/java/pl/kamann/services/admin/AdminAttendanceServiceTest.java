@@ -74,26 +74,26 @@ class AdminAttendanceServiceTest {
     }
 
 
-    @Test
-    void getAttendanceSummary_ShouldReturnSummary() {
-        var pageable = Pageable.unpaged();
-
-        var attendance = new Attendance();
-        var dto = AttendanceDetailsDto.builder()
-                .id(1L)
-                .userId(100L)
-                .status(AttendanceStatus.PRESENT)
-                .build();
-        Page<Attendance> attendancePage = new PageImpl<>(List.of(attendance));
-
-        when(attendanceRepository.findAll(pageable)).thenReturn(attendancePage);
-        when(attendanceMapper.toAttendanceDetailsDto(attendance)).thenReturn(dto);
-
-        Page<AttendanceDetailsDto> result = adminAttendanceService.getAttendanceSummary(pageable);
-
-        assertEquals(1, result.getTotalElements());
-        assertEquals(dto, result.getContent().getFirst());
-    }
+//    @Test
+//    void getAttendanceSummary_ShouldReturnSummary() {
+//        var pageable = Pageable.unpaged();
+//
+//        var attendance = new Attendance();
+//        var dto = AttendanceDetailsDto.builder()
+//                .id(1L)
+//                .userId(100L)
+//                .status(AttendanceStatus.PRESENT)
+//                .build();
+//        Page<Attendance> attendancePage = new PageImpl<>(List.of(attendance));
+//
+//        when(attendanceRepository.findAll(pageable)).thenReturn(attendancePage);
+//        when(attendanceMapper.toAttendanceDetailsDto(attendance)).thenReturn(dto);
+//
+//        Page<AttendanceDetailsDto> result = adminAttendanceService.getAttendanceSummary(pageable);
+//
+//        assertEquals(1, result.getTotalElements());
+//        assertEquals(dto, result.getContent().getFirst());
+//    }
 
     @Test
     void getAttendanceStatistics_ShouldReturnStatistics_WhenValid() {

@@ -1,17 +1,13 @@
 package pl.kamann.infrastructure.pagination;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import pl.kamann.domain.common.PaginationCriteria;
 
 import java.io.Serializable;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class PaginationMetaData implements Serializable {
-    private int totalPages;
-    private long totalElements;
+public record PaginationMetaData(int totalPages, long totalElements) implements Serializable {
+
+    public static PaginationMetaData from(PaginationCriteria criteria, long totalElements) {
+        int totalPages = (int) Math.ceil((double) totalElements / criteria.size());
+        return new PaginationMetaData(totalPages, totalElements);
+    }
 }

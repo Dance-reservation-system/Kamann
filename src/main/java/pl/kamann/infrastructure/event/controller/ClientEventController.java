@@ -2,12 +2,22 @@ package pl.kamann.infrastructure.event.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import pl.kamann.domain.event.dto.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import pl.kamann.domain.event.ClientEventQueryService;
+import pl.kamann.domain.event.ClientOccurrenceQueryService;
+import pl.kamann.domain.event.dto.EventDto;
+import pl.kamann.domain.event.dto.EventLightDto;
+import pl.kamann.domain.event.dto.OccurrenceEventDto;
+import pl.kamann.domain.event.dto.OccurrenceEventLightDto;
+import pl.kamann.domain.event.dto.OccurrenceEventScope;
 import pl.kamann.infrastructure.pagination.PaginatedResponseDto;
-import pl.kamann.domain.event.ClientEventService;
 
 @RestController
 @RequestMapping("/api/v1/client")
@@ -15,16 +25,19 @@ import pl.kamann.domain.event.ClientEventService;
 @Tag(name = "2. client event controller", description = "Fetch events and occurrences with filtering and pagination.")
 public class ClientEventController {
 
-    private final ClientEventService clientEventService;
+    private final ClientEventQueryService clientEventQueryService;
+    private final ClientOccurrenceQueryService clientOccurrenceQueryService;
+
 
     @GetMapping("/occurrences")
     @Operation(summary = "Get paginated occurrences", description = "Retrieves paginated occurrences based on scope.")
     public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
             @RequestParam(defaultValue = "UPCOMING", required = false) OccurrenceEventScope scope,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request
     ) {
-        return ResponseEntity.ok(clientEventService.getOccurrences(scope, page, size));
+        return ResponseEntity.ok(clientOccurrenceQueryService.getOccurrences(scope, page, size, request));
     }
 
     @GetMapping("/occurrences/{occurrenceId}")
@@ -33,7 +46,7 @@ public class ClientEventController {
             description = "Retrieve details of a specific OccurrenceEvent using its unique ID."
     )
     public ResponseEntity<OccurrenceEventDto> getOccurrenceEventById(@PathVariable Long occurrenceId) {
-        return ResponseEntity.ok(clientEventService.getOccurrenceById(occurrenceId));
+        return ResponseEntity.ok(clientOccurrenceQueryService.getOccurrenceById(occurrenceId));
     }
 
     @GetMapping("/events")
@@ -42,7 +55,7 @@ public class ClientEventController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(clientEventService.getLightEvents(page, size));
+        return ResponseEntity.ok(clientEventQueryService.getLightEvents(page, size));
     }
 
     @GetMapping("/events/{eventId}")
@@ -52,16 +65,16 @@ public class ClientEventController {
     )
     public ResponseEntity<EventDto> getEventById(
             @PathVariable Long eventId) {
-        return ResponseEntity.ok(clientEventService.getEventById(eventId));
+        return ResponseEntity.ok(clientEventQueryService.getEventById(eventId));
     }
 
     @GetMapping("event-types/{eventType}/events")
     @Operation(summary = "Get events by event type", description = "Retrieves paginated events based on type")
     public ResponseEntity<PaginatedResponseDto<EventDto>> getEventsByType(
-            @RequestParam String eventType,
+            @PathVariable String eventType,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(clientEventService.getEventsByType(eventType, page, size));
+        return ResponseEntity.ok(clientEventQueryService.getEventsByType(eventType, page, size));
     }
 }

@@ -30,10 +30,10 @@
 //import pl.kamann.domain.authuser.dto.RegisterRequest;
 //import pl.kamann.domain.authuser.RefreshToken;
 //import pl.kamann.entities.appuser.*;
-//import pl.kamann.domain.appuser.AppUserMapper;
-//import pl.kamann.domain.appuser.AppUserRepository;
+//import pl.kamann.application.mapper.AppUserMapper;
+//import pl.kamann.domain.appuser.repository.AppUserRepository;
 //import pl.kamann.domain.authuser.AuthUserRepository;
-//import pl.kamann.domain.appuser.RoleRepository;
+//import pl.kamann.domain.appuser.repository.RoleRepository;
 //import pl.kamann.infrastructure.authuser.AuthService;
 //import pl.kamann.infrastructure.email.ConfirmUserService;
 //import pl.kamann.domain.authuser.RefreshTokenService;

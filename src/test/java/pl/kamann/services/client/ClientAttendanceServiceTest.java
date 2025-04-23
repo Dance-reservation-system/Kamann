@@ -3,65 +3,82 @@ package pl.kamann.services.client;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
+import pl.kamann.domain.appuser.AppUser;
+import pl.kamann.domain.appuser.lookup.UserLookupService;
+import pl.kamann.domain.attendance.AttendanceRepository;
+import pl.kamann.domain.attendance.AttendanceStatus;
 import pl.kamann.domain.attendance.ClientAttendanceService;
+import pl.kamann.domain.event.Event;
+import pl.kamann.domain.event.EventLookupService;
+import pl.kamann.domain.event.OccurrenceEvent;
 import pl.kamann.domain.membershipcard.ClientMembershipCardService;
 import pl.kamann.infrastructure.handler.ApiException;
-import pl.kamann.domain.attendance.AttendanceStatus;
-import pl.kamann.domain.event.OccurrenceEvent;
-import pl.kamann.domain.attendance.AttendanceRepository;
-import pl.kamann.domain.event.EventLookupService;
-import pl.kamann.domain.appuser.UserLookupService;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public class ClientAttendanceServiceTest {
+class ClientAttendanceServiceTest {
 
-    private ClientMembershipCardService clientMembershipCardService;
     private ClientAttendanceService attendanceService;
-
     private OccurrenceEvent testOccurrence;
-    private UserLookupService userLookupService;
-    private EventLookupService eventLookupService;
 
     @BeforeEach
-    public void setup() {
+    void setup() throws Exception {
         MockitoAnnotations.openMocks(this);
         AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
-        attendanceService = new ClientAttendanceService(attendanceRepository, clientMembershipCardService, eventLookupService, userLookupService);
+        ClientMembershipCardService clientMembershipCardService = mock(ClientMembershipCardService.class);
+        EventLookupService eventLookupService = mock(EventLookupService.class);
+        UserLookupService userLookupService = mock(UserLookupService.class);
 
-        testOccurrence = OccurrenceEvent.builder()
-                .id(100L)
-                .start(LocalDateTime.now().plusHours(2))
-                .durationMinutes(60)
-                .maxParticipants(10)
-                .participants(new java.util.ArrayList<>())
-                .build();
+        attendanceService = new ClientAttendanceService(
+                attendanceRepository,
+                clientMembershipCardService,
+                null,
+                eventLookupService,
+                userLookupService
+        );
+
+        Event event = mock(Event.class);
+        AppUser createdBy = mock(AppUser.class);
+
+        testOccurrence = OccurrenceEvent.create(
+                event,
+                LocalDateTime.now().plusHours(2),
+                createdBy
+        );
     }
 
     @Test
-    public void determineCancellationStatus_shouldReturnEarlyCancel() {
-        // Set the occurrence to start in 48 hours so that cancellation is early.
-        testOccurrence.setStart(LocalDateTime.now().plusHours(48));
+    void determineCancellationStatus_shouldReturnEarlyCancel() throws Exception {
+        setStartTo(testOccurrence, LocalDateTime.now().plusHours(48));
         AttendanceStatus status = attendanceService.determineCancellationStatus(testOccurrence);
-        assertEquals(AttendanceStatus.EARLY_CANCEL, status);
+        assertEquals(AttendanceStatus.EARLY_CANCEL, status, "Expected EARLY_CANCEL for event > 24 hours away");
     }
 
     @Test
-    public void determineCancellationStatus_shouldReturnLateCancel() {
-        // Set occurrence to start in 23 hours, so cancellation deadline is passed.
-        testOccurrence.setStart(LocalDateTime.now().plusHours(23));
+    void determineCancellationStatus_shouldReturnLateCancel() throws Exception {
+        setStartTo(testOccurrence, LocalDateTime.now().plusHours(23));
         AttendanceStatus status = attendanceService.determineCancellationStatus(testOccurrence);
-        assertEquals(AttendanceStatus.LATE_CANCEL, status);
+        assertEquals(AttendanceStatus.LATE_CANCEL, status, "Expected LATE_CANCEL for event < 24 hours away");
     }
 
     @Test
-    public void validateCancellation_shouldThrowException_whenOccurrenceStarted() {
-        testOccurrence.setStart(LocalDateTime.now().minusHours(1));
-        ApiException ex = assertThrows(ApiException.class, () -> attendanceService.validateCancellation(testOccurrence));
-        assertEquals("Cannot cancel an occurrence that has already started", ex.getMessage());
+    void validateCancellation_shouldThrowException_whenOccurrenceStarted() throws Exception {
+        setStartTo(testOccurrence, LocalDateTime.now().minusHours(1));
+        ApiException ex = assertThrows(ApiException.class, () ->
+                        attendanceService.validateCancellation(testOccurrence),
+                "Expected ApiException for past event"
+        );
+        assertEquals("Cannot cancel an occurrence that has already started", ex.getMessage(), "Exception message mismatch");
+    }
+
+    void setStartTo(OccurrenceEvent event, LocalDateTime start) throws Exception {
+        Field field = OccurrenceEvent.class.getDeclaredField("start");
+        field.setAccessible(true);
+        field.set(event, start);
     }
 }

@@ -5,7 +5,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import pl.kamann.domain.authuser.AuthUser;
 import pl.kamann.domain.authuser.AuthUserRepository;
+import pl.kamann.domain.authuser.Email;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,18 +28,20 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private final JwtUtils jwtUtils;
+    private final AuthUserRepository authUserRepository;
     private final HandlerExceptionResolver exceptionResolver;
 
-    @Autowired
-    private JwtUtils jwtUtils;
-
-    @Autowired
-    private AuthUserRepository authUserRepository;
-
-    @Autowired
-    public JwtAuthenticationFilter(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+    public JwtAuthenticationFilter(
+            JwtUtils jwtUtils,
+            AuthUserRepository authUserRepository,
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver
+    ) {
+        this.jwtUtils = jwtUtils;
+        this.authUserRepository = authUserRepository;
         this.exceptionResolver = exceptionResolver;
     }
+
 
     private static final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -75,7 +77,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             log.debug("Extracted JWT Token: {}", token);
 
-            String email = jwtUtils.extractEmail(token);
+            String emailStr = jwtUtils.extractEmail(token);
+            Email email = new Email(emailStr);
             AuthUser user = authUserRepository.findByEmail(email)
                     .orElseThrow(() -> {
                         log.warn("User with email {} not found", email);
@@ -101,7 +104,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
-    private boolean isPublicUrl(String requestURI) {
+    private static boolean isPublicUrl(String requestURI) {
         return PUBLIC_URLS.stream().anyMatch(pattern -> pathMatcher.match(pattern, requestURI));
     }
 }
