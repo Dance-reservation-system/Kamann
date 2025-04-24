@@ -2,15 +2,18 @@ package pl.kamann.application.notification;
 
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pl.kamann.application.auth.NotificationException;
 import pl.kamann.domain.authuser.AuthUser;
+import pl.kamann.domain.event.Event;
 import pl.kamann.infrastructure.email.EmailSenderFacade;
 
 import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
 
     private final EmailSenderFacade emailSender;
@@ -45,5 +48,9 @@ public class NotificationService {
         } catch (MessagingException e) {
             throw new NotificationException("Failed to notify user of account confirmation", e);
         }
+    }
+
+    public void notifyParticipants(Event event) {
+        log.warn("Notifying participants of event: {}", event.getTitle());
     }
 }

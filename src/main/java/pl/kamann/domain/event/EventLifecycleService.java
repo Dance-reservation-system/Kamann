@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.application.auth.GetLoggedInUserService;
+import pl.kamann.application.notification.NotificationService;
 import pl.kamann.domain.appuser.AppUser;
 import pl.kamann.domain.appuser.lookup.UserLookupService;
 import pl.kamann.domain.event.dto.CreateEventRequest;
