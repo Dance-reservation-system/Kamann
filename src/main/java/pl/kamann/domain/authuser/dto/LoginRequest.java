@@ -11,6 +11,6 @@ public record LoginRequest(
         String email,
 
         @NotBlank(message = "Password cannot be blank")
-        @Schema(description = "CLIENT's password", example = "admin")
+        @Schema(description = "CLIENT's password", example = "password")
         String password
 ) {}

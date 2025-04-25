@@ -1,4 +1,3 @@
-// src/main/java/pl/kamann/domain/authuser/AuthUser.java
 /**
  * Ubiquitous Language Summary:
  * Sub-entity of the AppUser aggregate. Encapsulates identity, credentials, roles, and status.

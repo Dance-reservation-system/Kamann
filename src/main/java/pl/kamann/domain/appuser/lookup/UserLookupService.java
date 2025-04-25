@@ -7,6 +7,7 @@ import pl.kamann.domain.appuser.AppUser;
 import pl.kamann.domain.appuser.repository.AppUserRepository;
 import pl.kamann.domain.authuser.AuthCodes;
 import pl.kamann.domain.authuser.AuthUser;
+import pl.kamann.domain.authuser.AuthUserRepository;
 import pl.kamann.infrastructure.handler.ApiException;
 
 import java.util.Optional;
@@ -16,6 +17,7 @@ import java.util.Optional;
 public class UserLookupService {
 
     private final AppUserRepository appUserRepository;
+    private final AuthUserRepository authUserRepository;
 
     public AppUser findUserByIdWithAuth(Long userId) {
         return findUserById(userId);
@@ -39,6 +41,6 @@ public class UserLookupService {
     }
 
     public Optional<AppUser> findUserByEmail(String email) {
-        return appUserRepository.findByEmail(email);
+        return appUserRepository.findByAuthUser_Email_Value(email);
     }
 }

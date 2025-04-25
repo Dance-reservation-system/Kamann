@@ -1,7 +1,8 @@
 package pl.kamann.domain.facility;
 
-import pl.kamann.domain.facility.dto.FacilityDto;
 import lombok.RequiredArgsConstructor;
+import pl.kamann.domain.facility.dto.FacilityDto;
+
 
 @RequiredArgsConstructor
 public class FacilityFacade {

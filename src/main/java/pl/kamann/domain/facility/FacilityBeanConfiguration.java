@@ -11,6 +11,9 @@ class FacilityBeanConfiguration {
   return new FacilityService(facilityRepository);
  }
 
-
+ @Bean
+ FacilityFacade facilityFacade(FacilityService facilityService) {
+  return new FacilityFacade(facilityService);
+ }
 
 }

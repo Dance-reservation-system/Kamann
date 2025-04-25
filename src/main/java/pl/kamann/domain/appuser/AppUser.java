@@ -126,8 +126,10 @@ public class AppUser implements Serializable {
     public static AppUser create(String firstName, String lastName, AuthUser authUser) {
         AppUser user = new AppUser();
         user.firstName = firstName;
-        user.lastName = lastName;
-        user.authUser = authUser;
+        user.lastName  = lastName;
+        user.authUser  = authUser;
+        user.createdAt = LocalDateTime.now();
+        user.updatedAt = LocalDateTime.now();
         return user;
     }
 }

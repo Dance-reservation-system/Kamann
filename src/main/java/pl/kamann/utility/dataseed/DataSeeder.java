@@ -1,8 +1,9 @@
 package pl.kamann.utility.dataseed;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.application.auth.PasswordHasher;
@@ -10,7 +11,6 @@ import pl.kamann.domain.appuser.AppUser;
 import pl.kamann.domain.appuser.Role;
 import pl.kamann.domain.appuser.lookup.UserLookupService;
 import pl.kamann.domain.appuser.repository.AppUserRepository;
-import pl.kamann.domain.appuser.repository.RoleRepository;
 import pl.kamann.domain.attendance.Attendance;
 import pl.kamann.domain.attendance.AttendanceRepository;
 import pl.kamann.domain.authuser.AuthUser;
@@ -39,7 +39,6 @@ import java.util.stream.IntStream;
 @ConditionalOnProperty(name = "app.dataseed.enabled", havingValue = "true", matchIfMissing = true)
 public class DataSeeder {
 
-    private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
     private final AuthUserRepository authUserRepository;
     private final EventTypeRepository eventTypeRepository;
@@ -57,18 +56,13 @@ public class DataSeeder {
     AppUser client;
     List<EventData> events;
 
+    @EventListener(ApplicationReadyEvent.class)
     @Transactional
-    @PostConstruct
     public void seedData() {
-        createRoles();
         createUsers();
         seedEventTypes();
         seedEvents();
         seedAttendancesTransactional();
-    }
-
-    private void createRoles() {
-        roleRepository.saveAll(Arrays.asList(adminRole, instructorRole, clientRole));
     }
 
     private void createUsers() {
@@ -90,7 +84,9 @@ public class DataSeeder {
                 createUser("instructor4@yoga.com", "Lucas", "Brown", Set.of(instructorRole))
         );
 
-        appUserRepository.saveAll(instructors);
+        for (AppUser user : instructors) {
+            appUserRepository.save(user);
+        }
     }
 
     private void createClients() {
@@ -100,7 +96,7 @@ public class DataSeeder {
 
     private AuthUser createAuthUser(String value, Set<Role> roles) {
         Email email = new Email(value);
-        Password password = new Password("admin", passwordHasher);
+        Password password = new Password("password", passwordHasher);
         AuthUser authUser = AuthUser.create(email, password, roles);
         authUserRepository.save(authUser);
         return authUser;
@@ -116,13 +112,13 @@ public class DataSeeder {
     }
 
     private void seedEventTypes() {
-        Long YOGA_TYPE_ID = 1L;
-        Long DANCE_TYPE_ID = 2L;
-        Long POLEDANCE_TYPE_ID = 3L;
+        Long yogaTypeId = 1L;
+        Long danceTypeId = 2L;
+        Long poleDanceTypeId = 3L;
         List<EventType> eventTypes = List.of(
-                new EventType(YOGA_TYPE_ID, "Yoga", "Morning yoga"),
-                new EventType(DANCE_TYPE_ID, "Dance", "Morning dance"),
-                new EventType(POLEDANCE_TYPE_ID, "PoleDance", "Morning Pole Dance")
+                new EventType(yogaTypeId, "Yoga", "Morning yoga"),
+                new EventType(danceTypeId, "Dance", "Morning dance"),
+                new EventType(poleDanceTypeId, "PoleDance", "Morning Pole Dance")
         );
         eventTypeRepository.saveAll(eventTypes);
     }
