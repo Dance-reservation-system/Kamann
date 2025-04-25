@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import pl.kamann.domain.appuser.Role;
 import pl.kamann.domain.authuser.AuthUser;
 import pl.kamann.domain.authuser.Email;
+import pl.kamann.domain.common.PaginationCriteria;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,4 +26,17 @@ public interface JpaAuthUserRepository extends JpaRepository<AuthUser, Long> {
     List<AuthUser> findAdminUser();
 
     boolean existsByEmail(Email email);
+
+    default List<AuthUser> findAll(PaginationCriteria criteria) {
+        Pageable pageable = criteria.toSpringPageable();
+        Page<AuthUser> page = findAll(pageable);
+        return page.getContent();
+    }
+
+    default List<AuthUser> findByRolesContaining(Role role, PaginationCriteria criteria) {
+        Pageable pageable = criteria.toSpringPageable();
+        Page<AuthUser> page = findByRolesContaining(role, pageable);
+        return page.getContent();
+    }
+
 }
