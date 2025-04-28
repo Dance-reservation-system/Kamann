@@ -48,7 +48,7 @@ public class SecurityConfig {
             "/api/v1/auth/confirm",
             "/api/v1/auth/request-password-reset",
             "/api/v1/auth/reset-password",
-            "/api/v1/auth/register-client",
+            "/api/v1/auth/register-customer",
             "/api/v1/auth/register-instructor",
             "/api/v1/auth/login",
             "/api/v1/auth/refresh-token",
@@ -155,7 +155,7 @@ public class SecurityConfig {
                         .description("API Documentation"))
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
                 .servers(List.of(
-                        new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080").description("API Server (Dev)")
+                        new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8081").description("API Server (Dev)")
                 ));
     }
 

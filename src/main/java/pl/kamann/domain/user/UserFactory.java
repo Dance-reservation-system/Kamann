@@ -24,20 +24,27 @@ public class UserFactory {
     private final AppUserFactory appUserFactory;
     private final PasswordHasher passwordHasher;
 
-    public UserAggregate createFullUser(String firstName, String lastName, String phone, RawAuthUserInput rawUser) {
+    public UserAggregate createFullUser(
+            String firstName,
+            String lastName,
+            String phone,
+            RawAuthUserInput rawUser
+    ) {
         AppUserProfile profile = AppUserProfile.create(firstName, lastName, phone);
-        AppUser appUser = appUserFactory.create(profile, null);
 
         Email email = new Email(rawUser.email());
         Password password = new Password(rawUser.password(), passwordHasher);
-
         AuthUser authUser = AuthUser.create(
                 email,
                 password,
                 rawUser.roles(),
                 AuthUserStatus.PENDING_CONFIRMATION,
-                appUser
+                null
         );
+
+        AppUser appUser = appUserFactory.create(profile, authUser);
+
+        authUser.linkAppUser(appUser);
 
         return new UserAggregate(authUser, appUser);
     }

@@ -7,6 +7,7 @@ package pl.kamann.application.auth;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.application.notification.NotificationService;
@@ -38,9 +39,14 @@ public class EmailConfirmationService {
     private final AuthUserRepository authUserRepository;
     private final NotificationService notificationService;
 
+
+    @Value("${app.base-url}")
+    private String baseUrl;
+
     public void sendConfirmationEmail(AuthUser authUser) {
         String token = tokenProvider.generateTokenForType(authUser.getEmail(), TokenType.CONFIRMATION);
-        String confirmationLink = tokenProvider.generateVerificationLink("/confirm?token=", token);
+        String prefix = baseUrl + "/api/v1/auth/confirm?token=";
+        String confirmationLink = tokenProvider.generateVerificationLink(prefix, token);
 
         if (authUser.getRoles().stream().anyMatch(role -> role.getName().equals(Role.INSTRUCTOR.getName()))) {
             List<AuthUser> adminUsers = authUserRepository.findAdminUser();

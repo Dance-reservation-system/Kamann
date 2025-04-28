@@ -23,6 +23,7 @@ import jakarta.persistence.PrimaryKeyJoinColumn;
 import pl.kamann.domain.appuser.AppUser;
 import pl.kamann.domain.appuser.Role;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Objects;
@@ -30,6 +31,9 @@ import java.util.Set;
 
 @Entity
 public class AuthUser implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -150,7 +154,7 @@ public class AuthUser implements Serializable {
                 .anyMatch(r -> r.getName().equalsIgnoreCase(role));
     }
 
-    void linkAppUser(AppUser appUser) {
+    public void linkAppUser(AppUser appUser) {
         this.appUser = appUser;
     }
 
