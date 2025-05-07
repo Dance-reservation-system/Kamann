@@ -1,0 +1,42 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="…">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>pl.kamann</groupId>
+        <artifactId>kamann</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>kamann-domain</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <java.version>21</java.version>
+        <spring-boot.repackage.skip>true</spring-boot.repackage.skip>
+    </properties>
+
+    <dependencies>
+        <!-- JPA -->
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <version>2.2.3</version>
+        </dependency>
+        <!-- Bean validation -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>2.0.2</version>
+        </dependency>
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.34</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>
