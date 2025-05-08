@@ -21,22 +21,24 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
 ## 🌟 Features
 
 ### 🛡️ Admin
-- Full event lifecycle management
-- User administration with activation/deactivation
-- Financial reporting (weekly/monthly/yearly)
-- Attendance analytics dashboard
+- End-to-end class lifecycle management with scheduling and archiving
+- User and role management with activation/deactivation controls
+- Financial reports (weekly/monthly/yearly) with revenue breakdowns
+- Attendance analytics with trends and instructor performance
+- Instructor profiles with availability and class history
 
 ### 🕺 Instructor
-- Personal schedule management
-- Real-time attendance tracking
-- Membership validation system
-- Class cancellation notifications
+- Personalized schedule dashboard with live updates
+- Real-time attendance tracking with instant check-in/out
+- On-the-spot membership validation for customers
+- Instant notifications for class cancellations or changes
 
-### 💃 Client
-- Calender for booking events
+### 💃 Customer
+- Interactive calendar for booking and reviewing classes
 - Class booking system with membership integration
-- Membership usage tracking
-- Advanced event search filters
+- Tracking of membership usage and remaining entrances
+- Smart search with filters for class type, instructor and schedule
+- Email/sms notifications for bookings, reminders and updates
 
 ## 🛠️ Technologies
 
