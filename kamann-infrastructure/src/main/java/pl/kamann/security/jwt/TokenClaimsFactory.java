@@ -1,4 +1,4 @@
-package pl.kamann.application.security;
+package pl.kamann.security.jwt;
 
 import org.springframework.stereotype.Component;
 import pl.kamann.domain.authuser.vo.Role;

@@ -66,7 +66,7 @@ public class AppUserQueryService {
         String token = jwtUtils.extractTokenFromRequest(request);
         jwtUtils.validateToken(token);
 
-        Email email = new Email(jwtUtils.extractEmail(token));
+        Email email = new Email(jwtUtils.getSubject(token));
         AuthUser authUser = authUserRepository
                 .findByEmail(email)
                 .orElseThrow(() ->

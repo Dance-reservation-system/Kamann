@@ -17,6 +17,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,6 +27,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import pl.kamann.security.jwt.JwtAuthenticationFilter;
+import pl.kamann.security.jwt.JwtUtils;
 
 import java.util.List;
 
@@ -34,14 +36,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final HandlerExceptionResolver exceptionResolver;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public SecurityConfig(
-            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver,
-            JwtAuthenticationFilter jwtAuthenticationFilter
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver
     ) {
         this.exceptionResolver = exceptionResolver;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     private static final String[] PUBLIC_URLS = {
@@ -71,18 +70,34 @@ public class SecurityConfig {
     };
 
     @Bean
-    @Profile(value = "prod")
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return getSecurityFilterChain(http, corsConfigurationSourceProd());
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtils jwtUtils, UserDetailsService userDetailsService) {
+        return new JwtAuthenticationFilter(jwtUtils, userDetailsService);
     }
 
     @Bean
-    @Profile(value = "dev")
-    public SecurityFilterChain securityFilterChainDevOriented(HttpSecurity http, CorsConfigurationSource source) throws Exception {
-        return getSecurityFilterChain(http, corsConfigurationSourceDev());
+    @Profile("prod")
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
+        return getSecurityFilterChain(http, corsConfigurationSourceProd(), jwtAuthenticationFilter);
     }
 
-    private SecurityFilterChain getSecurityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
+    @Bean
+    @Profile("dev")
+    public SecurityFilterChain securityFilterChainDevOriented(
+            HttpSecurity http,
+            CorsConfigurationSource source,
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
+        return getSecurityFilterChain(http, corsConfigurationSourceDev(), jwtAuthenticationFilter);
+    }
+
+    private SecurityFilterChain getSecurityFilterChain(
+            HttpSecurity http,
+            CorsConfigurationSource corsConfigurationSource,
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))

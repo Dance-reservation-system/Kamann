@@ -13,4 +13,6 @@ public interface TokenProvider {
     String generateTokenForType(Email email, TokenType tokenType);
 
     String generateVerificationLink(String basePath, String token);
+
+    String getSubject(String token);
 }

@@ -29,6 +29,12 @@ public class AuthUser extends AggregateRoot<AuthUserId> {
     private final Set<Role> roles = new HashSet<>();
     private final Set<RefreshToken> refreshTokens = new HashSet<>();
 
+    public AuthUser(AuthUserId authUserId, AuthUserId id, Email email) {
+        super(authUserId);
+        this.id = id;
+        this.email = email;
+    }
+
     // Private constructor enforces invariants and records registration event
     private AuthUser(AuthUserId id,
                      Email email,
@@ -156,5 +162,15 @@ public class AuthUser extends AggregateRoot<AuthUserId> {
 
     public void startDeletion() {
         this.status = AuthUserStatus.PENDING_DELETION;
+    }
+
+    public static AuthUser restore(AuthUserId id,
+                                   Email email,
+                                   Password password,
+                                   Set<Role> roles,
+                                   AuthUserStatus status) {
+        AuthUser user = new AuthUser(id, email, password, roles);
+        user.status = status;
+        return user;
     }
 }

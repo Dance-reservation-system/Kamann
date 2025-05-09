@@ -19,7 +19,6 @@ import pl.kamann.domain.authuser.vo.Role;
 import pl.kamann.domain.authuser.vo.TokenType;
 import pl.kamann.email.EmailSenderFacade;
 import pl.kamann.notification.NotificationPort;
-import pl.kamann.security.jwt.JwtUtils;
 
 import java.util.List;
 import java.util.Locale;
@@ -30,7 +29,6 @@ import java.util.Locale;
 class EmailConfirmationService {
 
     private final TokenProvider tokenProvider;
-    private final JwtUtils jwtUtils;
     private final AppUserFinder appUserFinder;
     private final ScheduledTaskService scheduledTaskService;
     private final AuthUserRepository authUserRepository;
@@ -71,11 +69,11 @@ class EmailConfirmationService {
 
     @Transactional
     public void confirmAccount(String token) {
-        if (!jwtUtils.validateToken(token, TokenType.CONFIRMATION)) {
+        if (!tokenProvider.isValid(token)) {
             throw new ApiException("Invalid confirmation token.", HttpStatus.BAD_REQUEST, AuthCode.INVALID_TOKEN.name());
         }
 
-        String email = jwtUtils.extractEmail(token);
+        String email = tokenProvider.getSubject(token);
         AuthUser user = authUserRepository.findByEmail(new Email(email))
                 .orElseThrow(() -> new ApiException("User not found", HttpStatus.NOT_FOUND, AuthCode.USER_NOT_FOUND.name()));
 

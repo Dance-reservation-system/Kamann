@@ -1,24 +1,12 @@
-// src/main/java/pl/kamann/application/authuser/RegisterInstructorService.java
 package pl.kamann.application.authuser;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.kamann.application.authuser.command.RegisterInstructorCommand;
-import pl.kamann.domain.authuser.factory.UserAccountFactory;
-import pl.kamann.domain.security.TokenProvider;
-import pl.kamann.domain.appuser.aggregate.AppUser;
 import pl.kamann.domain.appuser.repository.AppUserRepository;
-import pl.kamann.domain.authuser.aggregate.AuthUser;
+import pl.kamann.domain.authuser.factory.UserAccountFactory;
 import pl.kamann.domain.authuser.port.out.AuthUserRepository;
-import pl.kamann.domain.authuser.service.AuthUserPolicy;
 import pl.kamann.domain.authuser.vo.Email;
-import pl.kamann.domain.authuser.vo.Password;
-import pl.kamann.domain.authuser.vo.Role;
-import pl.kamann.email.EmailSenderFacade;
-import pl.kamann.notification.NotificationPort;
-
-import java.util.Set;
 
 /**
  * Ubiquitous Language Summary:

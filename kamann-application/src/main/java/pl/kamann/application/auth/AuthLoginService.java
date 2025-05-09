@@ -20,13 +20,13 @@ import pl.kamann.domain.authuser.exception.InvalidCredentialsException;
 import pl.kamann.domain.authuser.service.RefreshTokenService;
 import pl.kamann.domain.authuser.vo.AuthCode;
 import pl.kamann.domain.authuser.vo.AuthUserStatus;
-import pl.kamann.domain.authuser.vo.Role;
-import pl.kamann.security.jwt.JwtUtils;
+import pl.kamann.domain.security.TokenProvider;
+import pl.kamann.security.jwt.TokenClaimsFactory;
 import shared.ApiException;
 import shared.LoginRequest;
 import shared.LoginResponse;
 
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -35,8 +35,8 @@ public class AuthLoginService {
 
     private static final int MAX_AGE = 7 * 24 * 3600; // 7 days
 
-    //todo implement..
-    private final JwtUtils jwtUtils;
+    private final TokenProvider tokenProvider;
+    private final TokenClaimsFactory tokenClaimsFactory;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenValidator refreshTokenValidator;
@@ -53,7 +53,6 @@ public class AuthLoginService {
             );
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
 
-            // If they had a pending-deletion scheduled, cancel it on login
             if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
                 scheduledTaskService.cancelPendingDeletionTask(authUser.getEmail().value());
                 authUser.activate();
@@ -82,10 +81,8 @@ public class AuthLoginService {
                                       HttpServletResponse response) {
         log.info("Refreshing token: refreshToken={}", refreshTokenValue);
 
-        // 1) Validate format / basic checks
         refreshTokenValidator.validateRefreshToken(refreshTokenValue);
 
-        // 2) Lookup via domain port
         RefreshToken token = refreshTokenService
                 .findByToken(refreshTokenValue)
                 .orElseThrow(() ->
@@ -96,32 +93,21 @@ public class AuthLoginService {
                         )
                 );
 
-        // 3) Check expiry
         refreshTokenValidator.validateNotExpired(token);
 
-        // 4) Revoke the old one
         refreshTokenService.revoke(token);
 
         AuthUser authUser = token.getAuthUser();
 
-        // 5) Remove old cookie
         response.addCookie(unsetCookie());
 
-        // 6) Issue new tokens
         return issueTokensAndSetCookies(authUser, response);
     }
 
     private LoginResponse issueTokensAndSetCookies(AuthUser authUser,
                                                    HttpServletResponse response) {
-        String accessToken = jwtUtils.generateToken(
-                authUser.getEmail().value(),
-                jwtUtils.createClaims(
-                        "roles",
-                        authUser.getRoles().stream()
-                                .map(Role::name)
-                                .collect(Collectors.toSet())
-                )
-        );
+        Map<String, Object> claims = tokenClaimsFactory.createClaims(authUser);
+        String accessToken = tokenProvider.generateToken(authUser);
 
         RefreshToken newToken = refreshTokenService.issue(authUser);
         response.addCookie(setCookie(newToken.getToken()));
@@ -134,7 +120,6 @@ public class AuthLoginService {
 
         return new LoginResponse(accessToken, email, fullName);
     }
-
 
     private static Cookie setCookie(String refreshToken) {
         Cookie cookie = new Cookie("refreshToken", refreshToken);

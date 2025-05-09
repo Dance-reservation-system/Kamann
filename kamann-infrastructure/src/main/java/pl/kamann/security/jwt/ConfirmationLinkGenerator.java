@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import pl.kamann.domain.authuser.vo.TokenType;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @Getter
 @RequiredArgsConstructor
@@ -17,6 +20,7 @@ public class ConfirmationLinkGenerator {
     @Value("${reset.password.link}")
     private String resetPasswordLink;
 
+    private final TokenClaimsFactory tokenClaimsFactory;
     private final JwtUtils jwtUtils;
 
     public String generateLink(String baseUrl, String token) {
@@ -24,6 +28,9 @@ public class ConfirmationLinkGenerator {
     }
 
     public String generateToken(String email, TokenType tokenType) {
-        return jwtUtils.generateToken(email, jwtUtils.createClaims("TokenType", tokenType.toString()));
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", tokenType.toString());
+        claims.put("email", email);
+        return jwtUtils.generateToken(email, claims);
     }
 }

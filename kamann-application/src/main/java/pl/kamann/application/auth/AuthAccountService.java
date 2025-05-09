@@ -36,7 +36,7 @@ public class AuthAccountService {
                     AuthCode.INVALID_TOKEN.name());
         }
 
-        String email = jwtUtils.extractEmail(token);
+        String email = jwtUtils.getSubject(token);
         AppUser appUser = appUserFinder.findByEmail(email)
                 .orElseThrow(() -> new ApiException(
                         "User not found for email: " + email,

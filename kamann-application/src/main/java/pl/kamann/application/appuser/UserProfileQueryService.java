@@ -28,7 +28,7 @@ public class UserProfileQueryService {
         String token = jwtUtils.extractTokenFromRequest(request);
         jwtUtils.validateToken(token);
 
-        Email email = new Email(jwtUtils.extractEmail(token));
+        Email email = new Email(jwtUtils.getSubject(token));
 
         AppUser user = appUserFinder.findByEmail(email.value())
                 .orElseThrow(() -> new IllegalStateException("User not found: " + email.value()));

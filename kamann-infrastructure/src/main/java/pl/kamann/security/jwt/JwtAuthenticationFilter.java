@@ -4,107 +4,55 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.HandlerExceptionResolver;
-import pl.kamann.domain.authuser.aggregate.AuthUser;
-import pl.kamann.domain.authuser.port.out.AuthUserRepository;
-import pl.kamann.domain.authuser.vo.Email;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
-@Component
-@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
-    private final AuthUserRepository authUserRepository;
-    private final HandlerExceptionResolver exceptionResolver;
+    private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(
-            JwtUtils jwtUtils,
-            AuthUserRepository authUserRepository,
-            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver
-    ) {
+    public JwtAuthenticationFilter(JwtUtils jwtUtils, UserDetailsService userDetailsService) {
         this.jwtUtils = jwtUtils;
-        this.authUserRepository = authUserRepository;
-        this.exceptionResolver = exceptionResolver;
+        this.userDetailsService = userDetailsService;
     }
 
-
-    private static final AntPathMatcher pathMatcher = new AntPathMatcher();
-
-    private static final List<String> PUBLIC_URLS = List.of(
-            "/api/v1/auth/confirm",
-            "/api/v1/auth/request-password-reset",
-            "/api/v1/auth/reset-password",
-            "/api/v1/auth/register-customer",
-            "/api/v1/auth/register-instructor",
-            "/api/v1/auth/login",
-            "/api/v1/auth/refresh-token",
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-ui.html"
-    );
-
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
-        String requestURI = request.getRequestURI();
-        log.debug("JWT Filter Intercepted Request: {}", requestURI);
+        final String authHeader = request.getHeader("Authorization");
 
-        if (isPublicUrl(requestURI)) {
-            log.debug("Skipping JWT authentication for: {}", requestURI);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        try {
-            String token = jwtUtils.extractTokenFromRequest(request);
-            jwtUtils.validateToken(token);
+        final String token = authHeader.substring(7);
+        final String username = jwtUtils.getSubject(token);
 
-            log.debug("Extracted JWT Token: {}", token);
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            String emailStr = jwtUtils.extractEmail(token);
-            Email email = new Email(emailStr);
-            AuthUser user = authUserRepository.findByEmail(email)
-                    .orElseThrow(() -> {
-                        log.warn("User with email {} not found", email);
-                        return new UsernameNotFoundException("User not found");
-                    });
+            if (jwtUtils.validateToken(token)) {
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
 
-            List<GrantedAuthority> authorities = user.getRoles().stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
-                    .collect(Collectors.toList());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    user.getEmail(), null, authorities);
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.info("Authenticated user: {}", email);
-
-            filterChain.doFilter(request, response);
-        } catch (Exception ex) {
-            exceptionResolver.resolveException(request, response, null, ex);
-        } finally {
-            SecurityContextHolder.clearContext();
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
         }
-    }
 
-    private static boolean isPublicUrl(String requestURI) {
-        return PUBLIC_URLS.stream().anyMatch(pattern -> pathMatcher.match(pattern, requestURI));
+        filterChain.doFilter(request, response);
     }
 }
