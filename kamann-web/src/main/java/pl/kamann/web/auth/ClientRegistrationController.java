@@ -4,11 +4,14 @@
 package pl.kamann.web.auth;
 
 import lombok.RequiredArgsConstructor;
-import main.RegisterClientCommand;
-import pl.kamann.application.authuser.RegisterClientService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import pl.kamann.application.authuser.RegisterClientService;
+import pl.kamann.application.authuser.command.RegisterClientCommand;
 
 @RestController
 @RequestMapping("/api/auth")

@@ -1,5 +1,7 @@
 package pl.kamann.domain.authuser.vo;
 
+import pl.kamann.domain.authuser.service.PasswordHasher;
+
 import java.util.Objects;
 
 public record Password(String value) {
@@ -15,5 +17,9 @@ public record Password(String value) {
     @Override
     public String toString() {
         return "***";
+    }
+
+    public boolean matches(String rawPassword, PasswordHasher hasher) {
+        return hasher.matches(rawPassword, this.value);
     }
 }

@@ -3,24 +3,25 @@
  * Application-level infrastructure service that handles password reset flow,
  * including token issuance, email delivery, and password update.
  */
-package pl.kamann.security;
+package pl.kamann.application.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.kamann.application.auth.PasswordHasher;
-import pl.kamann.application.security.TokenProvider;
+import pl.kamann.domain.authuser.service.PasswordHasher;
 import pl.kamann.domain.authuser.vo.AuthCode;
 import pl.kamann.domain.authuser.aggregate.AuthUser;
 import pl.kamann.domain.authuser.port.out.AuthUserRepository;
 import pl.kamann.domain.authuser.vo.Email;
 import pl.kamann.domain.authuser.vo.Password;
 import pl.kamann.domain.authuser.vo.TokenType;
-import pl.kamann.infrastructure.email.EmailSender;
-import pl.kamann.infrastructure.handler.ApiException;
-import pl.kamann.infrastructure.security.jwt.JwtUtils;
+import pl.kamann.domain.security.TokenProvider;
+import pl.kamann.email.EmailSender;
+import pl.kamann.security.ResetPasswordRequest;
+import pl.kamann.security.jwt.JwtUtils;
+import shared.ApiException;
 
 import java.util.Locale;
 
@@ -63,7 +64,7 @@ public class PasswordResetService {
         String resetLink = tokenProvider.generateVerificationLink("/reset-password?token=", token);
 
         log.info("Sending reset password email to: {}", authUser.getEmail());
-        emailSender.sendEmail(authUser.getEmail().getValue(), resetLink, Locale.ENGLISH, "reset.password");
+        emailSender.sendEmail(authUser.getEmail().value(), resetLink, Locale.ENGLISH, "reset.password");
     }
 
     @Transactional
@@ -84,7 +85,9 @@ public class PasswordResetService {
                     )
             );
 
-            authUser.resetPassword(new Password(newPassword, passwordHasher));
+            String hashed = passwordHasher.hash(newPassword);
+            authUser.resetPassword(new Password(hashed));
+
             authUserRepository.save(authUser);
 
             log.info("Password reset successfully for email: {}", authUser.getEmail());

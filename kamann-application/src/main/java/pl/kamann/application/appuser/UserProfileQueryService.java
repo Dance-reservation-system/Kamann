@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.application.authuser.lookup.AppUserFinder;
+import pl.kamann.domain.appuser.aggregate.AppUser;
 import pl.kamann.domain.authuser.vo.Email;
 import pl.kamann.security.jwt.JwtUtils;
 
@@ -28,10 +29,9 @@ public class UserProfileQueryService {
         jwtUtils.validateToken(token);
 
         Email email = new Email(jwtUtils.extractEmail(token));
-        var user = appUserFinder.findUserByEmail(email)
-            .orElseThrow(() ->
-                new IllegalStateException("User not found: " + email.value())
-            );
+
+        AppUser user = appUserFinder.findByEmail(email.value())
+                .orElseThrow(() -> new IllegalStateException("User not found: " + email.value()));
 
         return mapper.toProfileDto(user);
     }

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.application.authuser.command.RegisterInstructorCommand;
+import pl.kamann.domain.authuser.factory.UserAccountFactory;
 import pl.kamann.domain.security.TokenProvider;
 import pl.kamann.domain.appuser.aggregate.AppUser;
 import pl.kamann.domain.appuser.repository.AppUserRepository;
@@ -29,39 +30,29 @@ public class RegisterInstructorService {
 
     private final AuthUserRepository authUserRepository;
     private final AppUserRepository appUserRepository;
-    private final AuthUserPolicy authUserPolicy;
-    private final NotificationPort notificationPort;
-    private final EmailSenderFacade emailSenderFacade;
-    private final TokenProvider tokenProvider;
+    private final UserAccountFactory userAccountFactory;
+    private final EmailConfirmationFacade emailConfirmationFacade;
+
 
     @Transactional
-    public void register(RegisterInstructorCommand command) {
-        Email email = new Email(command.email());
+    public void register(RegisterRequest request) {
+        Email email = new Email(request.email());
 
         if (authUserRepository.findByEmail(email).isPresent()) {
-            throw new IllegalStateException("Instructor with this email already exists");
+            throw new IllegalArgumentException("User with email already exists");
         }
 
-        Password password = new Password(command.password());
-
-        AuthUser authUser = AuthUser.register(
-                email,
-                password,
-                Set.of(Role.INSTRUCTOR),
-                authUserPolicy
+        var user = userAccountFactory.createInstructor(
+                request.email(),
+                request.password(),
+                request.firstName(),
+                request.lastName(),
+                request.phone()
         );
 
-        AppUser appUser = AppUser.create(
-                authUser,
-                command.firstName(),
-                command.lastName(),
-                command.phone(),
-                command.policy()
-        );
+        authUserRepository.save(user.authUser());
+        appUserRepository.save(user.appUser());
 
-        authUserRepository.save(authUser);
-        appUserRepository.save(appUser);
-
-        // Confirmation email and admin notifications handled in EmailConfirmationService
+        emailConfirmationFacade.sendConfirmationEmail(user.authUser());
     }
 }

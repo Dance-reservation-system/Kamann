@@ -19,6 +19,7 @@ import pl.kamann.domain.authuser.port.out.AuthUserRepository;
 import pl.kamann.domain.authuser.vo.Email;
 import pl.kamann.domain.authuser.vo.Role;
 import pl.kamann.security.jwt.JwtUtils;
+import shared.dto.PaginationCriteria;
 
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class AppUserQueryService {
     private final JwtUtils jwtUtils;
 
     public PaginatedResponseDto<AppUserDto> getUsers(PaginationCriteria criteria, String roleName) {
-        criteria = new PaginationCriteria(criteria.page(), criteria.size());
+        criteria = new PaginationCriteria(criteria.getPage(), criteria.getSize(), null, null);
 
         List<AuthUser> authUsers;
         long total;
@@ -69,7 +70,7 @@ public class AppUserQueryService {
         AuthUser authUser = authUserRepository
                 .findByEmail(email)
                 .orElseThrow(() ->
-                        new IllegalStateException("AuthUser not found: " + email.getValue())
+                        new IllegalStateException("AuthUser not found: " + email.value())
                 );
 
         var appUser = appUserFinder.findAppUserByAuthUser(authUser);

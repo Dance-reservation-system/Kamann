@@ -7,12 +7,10 @@ package pl.kamann.security.jwt;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import pl.kamann.application.security.TokenProvider;
-import pl.kamann.domain.authuser.vo.Role;
 import pl.kamann.domain.authuser.aggregate.AuthUser;
 import pl.kamann.domain.authuser.vo.Email;
+import pl.kamann.domain.authuser.vo.Role;
 import pl.kamann.domain.authuser.vo.TokenType;
-import pl.kamann.domain.security.TokenProvider;
 
 import java.util.HashMap;
 import java.util.Map;

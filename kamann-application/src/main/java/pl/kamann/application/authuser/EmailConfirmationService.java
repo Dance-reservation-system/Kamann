@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.application.authuser.lookup.AppUserFinder;
 import pl.kamann.domain.security.TokenProvider;
-import pl.kamann.application.shared.ApiException;
+import shared.ApiException;
 import pl.kamann.authuser.scheduler.ScheduledTaskService;
 import pl.kamann.domain.authuser.aggregate.AuthUser;
 import pl.kamann.domain.authuser.port.out.AuthUserRepository;

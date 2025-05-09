@@ -1,4 +1,4 @@
-package pl.kamann.api.rest.auth;
+package pl.kamann.web.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pl.kamann.application.auth.AuthQueryService;
-import pl.kamann.application.user.dto.AppUserDto;
-import pl.kamann.domain.authuser.dto.LoginResponse;
+import pl.kamann.application.appuser.AppUserDto;
+import pl.kamann.application.authuser.AuthQueryService;
+import shared.LoginResponse;
+
 
 @RestController
 @RequestMapping("/api/v1/auth")

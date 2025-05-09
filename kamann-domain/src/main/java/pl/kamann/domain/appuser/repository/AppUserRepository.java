@@ -15,4 +15,6 @@ public interface AppUserRepository {
     Optional<AppUser> findByAuthUser(AuthUser authUser);
 
     Optional<AppUser> findByAuthUser_Email_Value(String email);
+
+    Optional<AppUser> findByIdWithAuth(Long id);
 }

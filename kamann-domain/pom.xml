@@ -19,6 +19,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>pl.kamann</groupId>
+            <artifactId>kamann-shared</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- JPA -->
         <dependency>
             <groupId>jakarta.persistence</groupId>

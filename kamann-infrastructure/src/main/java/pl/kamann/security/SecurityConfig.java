@@ -25,7 +25,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.HandlerExceptionResolver;
-import pl.kamann.infrastructure.security.jwt.JwtAuthenticationFilter;
+import pl.kamann.security.jwt.JwtAuthenticationFilter;
 
 import java.util.List;
 

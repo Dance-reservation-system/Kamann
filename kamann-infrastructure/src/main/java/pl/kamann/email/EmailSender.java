@@ -14,7 +14,7 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-class EmailSender implements EmailSenderFacade {
+public class EmailSender implements EmailSenderFacade {
     private final JavaMailSender javaMailSender;
     private final EmailContentBuilder emailContentBuilder;
     private final ResourceBundleEmailMessageProvider messageProvider;

@@ -24,6 +24,7 @@
 		<module>kamann-application</module>
 		<module>kamann-infrastructure</module>
 		<module>kamann-web</module>
+		<module>kamann-shared</module>
 	</modules>
 
 	<dependencies>

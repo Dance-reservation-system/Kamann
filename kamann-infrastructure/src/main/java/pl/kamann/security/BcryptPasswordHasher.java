@@ -1,19 +1,23 @@
 package pl.kamann.security;
 
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import pl.kamann.application.auth.PasswordHasher;
+import pl.kamann.domain.authuser.service.PasswordHasher;
 
 @Component
 public class BcryptPasswordHasher implements PasswordHasher {
+
     private final PasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    public boolean matches(String raw, String encoded) {
-        return encoder.matches(raw, encoded);
+    @Override
+    public String hash(String rawPassword) {
+        return encoder.encode(rawPassword);
     }
 
-    public String encode(String raw) {
-        return encoder.encode(raw);
+    @Override
+    public boolean matches(String rawPassword, String encodedPassword) {
+        return BCrypt.checkpw(rawPassword, encodedPassword);
     }
 }

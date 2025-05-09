@@ -1,13 +1,17 @@
 package pl.kamann.domain.authuser.aggregate;
 
-import pl.kamann.domain.common.AggregateRoot;
 import pl.kamann.domain.authuser.entity.RefreshToken;
 import pl.kamann.domain.authuser.event.AuthUserRegistered;
 import pl.kamann.domain.authuser.event.PasswordChanged;
 import pl.kamann.domain.authuser.event.RefreshTokenIssued;
 import pl.kamann.domain.authuser.factory.RefreshTokenFactory;
 import pl.kamann.domain.authuser.service.AuthUserPolicy;
-import pl.kamann.domain.authuser.vo.*;
+import pl.kamann.domain.authuser.vo.AuthUserId;
+import pl.kamann.domain.authuser.vo.AuthUserStatus;
+import pl.kamann.domain.authuser.vo.Email;
+import pl.kamann.domain.authuser.vo.Password;
+import pl.kamann.domain.authuser.vo.Role;
+import pl.kamann.domain.common.AggregateRoot;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -19,7 +23,7 @@ import java.util.UUID;
  */
 public class AuthUser extends AggregateRoot<AuthUserId> {
     private final AuthUserId id;
-    private Email email;
+    private final Email email;
     private Password password;
     private AuthUserStatus status;
     private final Set<Role> roles = new HashSet<>();
@@ -133,5 +137,24 @@ public class AuthUser extends AggregateRoot<AuthUserId> {
 
     public Set<RefreshToken> getRefreshTokens() {
         return Set.copyOf(refreshTokens);
+    }
+
+    public void resetPassword(Password newPassword) {
+        this.password = newPassword;
+    }
+
+    public void deactivate() {
+        this.status = AuthUserStatus.INACTIVE;
+    }
+
+    public void changeStatus(AuthUserStatus status) {
+        if (status == null) {
+            throw new IllegalArgumentException("Status cannot be null");
+        }
+        this.status = status;
+    }
+
+    public void startDeletion() {
+        this.status = AuthUserStatus.PENDING_DELETION;
     }
 }

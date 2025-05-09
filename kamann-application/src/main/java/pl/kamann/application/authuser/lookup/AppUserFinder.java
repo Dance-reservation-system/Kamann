@@ -28,4 +28,14 @@ public class AppUserFinder {
     public Optional<AuthUser> findUserByEmail(Email email) {
         return authUserRepository.findByEmail(email);
     }
+
+    public AppUser findUserByIdWithAuth(Long userId) {
+        return appUserRepository.findByIdWithAuth(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+    }
+
+    public AppUser findAppUserByAuthUser(AuthUser authUser) {
+        return appUserRepository.findByAuthUser(authUser)
+                .orElseThrow(() -> new RuntimeException("AppUser not found for AuthUser: " + authUser.getId()));
+    }
 }

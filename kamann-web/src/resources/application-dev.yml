@@ -1,4 +1,0 @@
-spring:
-  docker:
-    compose:
-      file: kamann-web/docker-compose-dev.yml

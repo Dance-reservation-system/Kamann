@@ -13,10 +13,10 @@ public class TokenClaimsFactory {
     public Map<String, Object> createClaims(AuthUser authUser) {
         Map<String, Object> claims = new HashMap<>();
 
-        claims.put("email", authUser.getEmail().getValue());
+        claims.put("email", authUser.getEmail().value());
         claims.put("userId", authUser.getId());
         claims.put("roles", authUser.getRoles().stream()
-                .map(Role::getName)
+                .map(Role::name)
                 .toList());
 
         return claims;

@@ -5,6 +5,8 @@ import pl.kamann.domain.authuser.aggregate.AuthUser;
 import pl.kamann.domain.authuser.vo.AuthUserId;
 import pl.kamann.domain.authuser.vo.Email;
 import pl.kamann.domain.authuser.vo.Role;
+import shared.dto.PaginationCriteria;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -21,4 +23,9 @@ public interface AuthUserRepository {
     Optional<AppUser> findByAuthUser(AuthUser user);
 
     List<AuthUser> findByRole(Role admin);
+
+    List<AuthUser> findAll(PaginationCriteria criteria);
+    long count();
+    List<AuthUser> findByRolesContaining(Role role, PaginationCriteria criteria);
+    long countByRole(Role role);
 }

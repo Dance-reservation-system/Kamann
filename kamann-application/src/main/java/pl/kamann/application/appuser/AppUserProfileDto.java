@@ -3,10 +3,11 @@ package pl.kamann.application.appuser;
 import pl.kamann.domain.authuser.vo.AuthUserStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 public record AppUserProfileDto(
-    Long id,
+    UUID id,
     String username,
     String email,
     AuthUserStatus status,

@@ -1,4 +1,4 @@
-package pl.kamann.api.rest.user.command;
+package pl.kamann.web.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pl.kamann.application.user.AppUserCommandService;
-import pl.kamann.application.user.dto.AppUserDto;
+import pl.kamann.application.appuser.AppUserCommandService;
+import pl.kamann.application.appuser.AppUserDto;
 import pl.kamann.domain.authuser.vo.AuthUserStatus;
 
 @RestController

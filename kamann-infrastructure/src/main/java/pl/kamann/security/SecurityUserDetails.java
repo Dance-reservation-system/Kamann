@@ -32,18 +32,18 @@ public class SecurityUserDetails implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Set<Role> roles = authUser.getRoles();
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
                 .collect(Collectors.toSet());
     }
 
     @Override
     public String getPassword() {
-        return authUser.getPassword().getValue();
+        return authUser.getPassword().value();
     }
 
     @Override
     public String getUsername() {
-        return authUser.getEmail().getValue();
+        return authUser.getEmail().value();
     }
 
     @Override

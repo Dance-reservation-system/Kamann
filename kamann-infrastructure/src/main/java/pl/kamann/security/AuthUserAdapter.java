@@ -24,7 +24,7 @@ public class AuthUserAdapter implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Set<String> roleNames = authUser.getRoles().stream()
-                .map(role -> "ROLE_" + role.getName())
+                .map(role -> "ROLE_" + role.name())
                 .collect(Collectors.toSet());
         return roleNames.stream()
                 .map(SimpleGrantedAuthority::new)
@@ -33,12 +33,12 @@ public class AuthUserAdapter implements UserDetails {
 
     @Override
     public String getPassword() {
-        return authUser.getPassword().getValue();
+        return authUser.getPassword().value();
     }
 
     @Override
     public String getUsername() {
-        return authUser.getEmail().getValue();
+        return authUser.getEmail().value();
     }
 
     @Override

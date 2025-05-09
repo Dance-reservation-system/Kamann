@@ -1,4 +1,5 @@
-package pl.kamann.application.shared;
+package shared;
+
 
 import org.springframework.http.HttpStatus;
 

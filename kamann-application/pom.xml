@@ -29,6 +29,11 @@
             <artifactId>kamann-infrastructure</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>pl.kamann</groupId>
+            <artifactId>kamann-shared</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- e.g. MapStruct for DTO mappers (interfaces only) -->
         <!--
         <dependency>

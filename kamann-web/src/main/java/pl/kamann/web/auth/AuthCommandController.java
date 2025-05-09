@@ -1,4 +1,4 @@
-package pl.kamann.api.rest.auth;
+package pl.kamann.web.auth;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,12 +9,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pl.kamann.application.auth.AuthCommandService;
-import pl.kamann.application.user.dto.AppUserDto;
-import pl.kamann.domain.authuser.dto.LoginRequest;
-import pl.kamann.domain.authuser.dto.LoginResponse;
-import pl.kamann.domain.authuser.dto.RegisterRequest;
-import pl.kamann.infrastructure.security.ResetPasswordRequest;
+import pl.kamann.application.appuser.AppUserDto;
+import pl.kamann.security.ResetPasswordRequest;
+import shared.LoginRequest;
+import shared.LoginResponse;
 
 @RestController
 @RequestMapping("/api/v1/auth")

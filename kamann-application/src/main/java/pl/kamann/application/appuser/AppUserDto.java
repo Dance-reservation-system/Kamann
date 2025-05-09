@@ -6,10 +6,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
+import java.util.UUID;
+
 @Builder
 public record AppUserDto(
         @NotNull(message = "User ID cannot be null")
-        Long id,
+        UUID id,
 
         @Email(message = "Email should be valid")
         @NotBlank(message = "Email cannot be blank")

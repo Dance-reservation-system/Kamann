@@ -6,5 +6,5 @@ package pl.kamann.domain.authuser.service;
  */
 public interface PasswordHasher {
     boolean matches(String rawPassword, String encodedPassword);
-    String encode(String rawPassword);
+    String hash(String rawPassword);
 }

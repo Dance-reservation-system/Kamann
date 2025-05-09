@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.domain.authuser.vo.Role;
 import pl.kamann.domain.authuser.vo.StatusCode;
-import pl.kamann.infrastructure.handler.ApiException;
+import shared.ApiException;
 
 @Service
 public class RoleLookupService {

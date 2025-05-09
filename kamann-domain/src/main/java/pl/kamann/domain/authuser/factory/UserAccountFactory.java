@@ -31,5 +31,15 @@ public class UserAccountFactory {
         return new UserAccount(authUser, appUser);
     }
 
+    public UserAccount createInstructor(String email, String password, String firstName, String lastName, String phone) {
+        Email emailVO = new Email(email);
+        Password passwordVO = new Password(password);
+        Set<Role> roles = Set.of(Role.INSTRUCTOR);
+
+        AuthUser authUser = AuthUser.register(emailVO, passwordVO, roles, authUserPolicy);
+        AppUser appUser = AppUser.create(authUser, firstName, lastName, phone, appUserPolicy);
+
+        return new UserAccount(authUser, appUser);
+    }
     public record UserAccount(AuthUser authUser, AppUser appUser) {}
 }
