@@ -58,7 +58,7 @@ public class AuthUser extends AggregateRoot<AuthUserId> {
                                     AuthUserPolicy policy) {
         policy.ensureEmailNotTaken(email);
         return new AuthUser(
-                new AuthUserId(UUID.randomUUID()),
+            null,
                 email,
                 password,
                 roles

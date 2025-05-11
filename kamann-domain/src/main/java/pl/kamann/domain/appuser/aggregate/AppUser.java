@@ -10,7 +10,6 @@ import pl.kamann.domain.common.AggregateRoot;
 
 import java.time.Instant;
 import java.util.Objects;
-import java.util.UUID;
 
 public class AppUser extends AggregateRoot<AppUserId> {
 
@@ -38,13 +37,25 @@ public class AppUser extends AggregateRoot<AppUserId> {
         record(new AppUserProfileCreated(id, authUser.getId(), firstName, lastName, createdAt));
     }
 
+    public AppUser(AppUserId id, AuthUser authUser, String firstName,
+                   String lastName, String phone, Instant createdAt, Instant updatedAt) {
+        super(id);
+        this.id = id;
+        this.authUser = authUser;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phone = phone;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
     public static AppUser create(AuthUser authUser,
                                  String firstName,
                                  String lastName,
                                  String phone,
                                  AppUserPolicy policy) {
         policy.ensureValidProfile(firstName, lastName, phone);
-        return new AppUser(new AppUserId(UUID.randomUUID()), authUser, firstName, lastName, phone);
+        return new AppUser(null, authUser, firstName, lastName, phone);
     }
 
     public void updateProfile(String firstName,

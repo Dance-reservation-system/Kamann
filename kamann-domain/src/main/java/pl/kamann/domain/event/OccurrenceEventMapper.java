@@ -34,13 +34,14 @@ public interface OccurrenceEventMapper {
     default String mapInstructorFullName(OccurrenceEvent occurrenceEvent) {
         return occurrenceEvent.getInstructor() != null ? occurrenceEvent.getInstructor().getFirstName() + " " + occurrenceEvent.getInstructor().getLastName() : null;
     }
+
     default Long map(AppUserId id) {
-        return id != null ? id.getValue().getMostSignificantBits() : null;
+        return id != null ? id.getValue() : null;
     }
 
     default Long map(AppUser appUser) {
         return (appUser != null && appUser.getId() != null)
-                ? map(appUser.getId())
+                ? appUser.getId().getValue()
                 : null;
     }
 }

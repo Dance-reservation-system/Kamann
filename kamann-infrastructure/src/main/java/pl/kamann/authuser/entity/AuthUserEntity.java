@@ -1,5 +1,7 @@
 package pl.kamann.authuser.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,6 +14,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.GenericGenerator;
+import pl.kamann.authuser.entity.converter.RoleSetConverter;
 import pl.kamann.domain.authuser.vo.AuthUserStatus;
 import pl.kamann.domain.authuser.vo.Role;
 
@@ -26,15 +30,15 @@ import java.util.UUID;
 public class AuthUserEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(generator = "UUID")
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "uuid")
     private UUID id;
 
     private String email;
 
     private String password;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = RoleSetConverter.class)
     private Set<Role> roles;
 
     @Enumerated(EnumType.STRING)

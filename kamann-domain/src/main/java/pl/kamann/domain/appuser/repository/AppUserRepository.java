@@ -5,6 +5,7 @@ import pl.kamann.domain.appuser.vo.AppUserId;
 import pl.kamann.domain.authuser.aggregate.AuthUser;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Port for loading/saving AppUser aggregates.
@@ -16,5 +17,5 @@ public interface AppUserRepository {
 
     Optional<AppUser> findByAuthUser_Email_Value(String email);
 
-    Optional<AppUser> findByIdWithAuth(Long id);
+    Optional<AppUser> findByIdWithAuth(UUID id);
 }

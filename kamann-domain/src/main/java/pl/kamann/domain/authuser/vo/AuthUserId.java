@@ -5,7 +5,7 @@ import pl.kamann.domain.common.Identifier;
 import java.util.UUID;
 
 public final class AuthUserId extends Identifier {
-  public AuthUserId(UUID value) {
+  public AuthUserId(Long value) {
     super(value);
   }
 }

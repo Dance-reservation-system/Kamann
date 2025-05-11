@@ -1,6 +1,8 @@
 package pl.kamann.authuser;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import pl.kamann.authuser.entity.AuthUserEntity;
 import pl.kamann.authuser.repository.JpaAuthUserRepository;
 import pl.kamann.domain.authuser.aggregate.AuthUser;
 import pl.kamann.domain.authuser.port.out.AuthUserRepository;
@@ -11,6 +13,7 @@ import shared.dto.PaginationCriteria;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 @RequiredArgsConstructor
 public class AuthUserRepositoryImpl implements AuthUserRepository {
 
@@ -19,7 +22,8 @@ public class AuthUserRepositoryImpl implements AuthUserRepository {
 
     @Override
     public Optional<AuthUser> findByEmail(Email email) {
-        return jpaAuthUserRepository.findByEmail(email.value()).map(authUserPersistenceMapper::toDomain);
+        Optional<AuthUserEntity> entity = jpaAuthUserRepository.findByEmail(email.value());
+        return entity.map(authUserPersistenceMapper::toDomain);
     }
 
     @Override

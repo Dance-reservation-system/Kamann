@@ -8,13 +8,13 @@ import java.util.UUID;
  * Subclasses simply call super(id).
  */
 public abstract class Identifier {
-    private final UUID value;
+    private final Long value;
 
-    protected Identifier(UUID value) {
+    protected Identifier(Long value) {
         this.value = Objects.requireNonNull(value, "Identifier value cannot be null");
     }
 
-    public UUID getValue() {
+    public Long getValue() {
         return value;
     }
 
