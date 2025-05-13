@@ -9,7 +9,6 @@ import pl.kamann.domain.authuser.port.out.AuthUserRepository;
 import pl.kamann.domain.authuser.vo.Email;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -30,7 +29,7 @@ public class AppUserFinder {
         return authUserRepository.findByEmail(email);
     }
 
-    public AppUser findUserByIdWithAuth(UUID userId) {
+    public AppUser findUserByIdWithAuth(Long userId) {
         return appUserRepository.findByIdWithAuth(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
     }

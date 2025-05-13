@@ -10,7 +10,6 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-
     <artifactId>kamann-web</artifactId>
     <packaging>jar</packaging>
 
@@ -25,6 +24,12 @@
             <artifactId>kamann-infrastructure</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>pl.kamann</groupId>
+            <artifactId>kamann-domain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Boot starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

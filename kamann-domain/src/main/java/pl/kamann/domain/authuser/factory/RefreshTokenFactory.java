@@ -20,7 +20,7 @@ public class RefreshTokenFactory {
      * Creates a new RefreshToken for the given user, valid for 7 days.
      */
     public RefreshToken createFor(AuthUser authUser) {
-        RefreshTokenId id  = new RefreshTokenId(UUID.randomUUID());
+        RefreshTokenId id  = new RefreshTokenId(1L);
         String tokenString = UUID.randomUUID().toString();
         Instant expiresAt  = Instant.now(clock).plusSeconds(7 * 24 * 3600);
 

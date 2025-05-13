@@ -1,5 +1,6 @@
 package pl.kamann.domain.authuser.factory;
 
+import org.springframework.stereotype.Component;
 import pl.kamann.domain.appuser.aggregate.AppUser;
 import pl.kamann.domain.appuser.service.AppUserPolicy;
 import pl.kamann.domain.authuser.aggregate.AuthUser;
@@ -10,6 +11,7 @@ import pl.kamann.domain.authuser.vo.Role;
 
 import java.util.Set;
 
+@Component
 public class UserAccountFactory {
 
     private final AuthUserPolicy authUserPolicy;

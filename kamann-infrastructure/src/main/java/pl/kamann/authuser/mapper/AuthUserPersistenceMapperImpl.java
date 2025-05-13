@@ -1,6 +1,7 @@
 package pl.kamann.authuser.mapper;
 
 import org.springframework.stereotype.Component;
+import pl.kamann.authuser.AuthUserPersistenceMapper;
 import pl.kamann.authuser.entity.AuthUserEntity;
 import pl.kamann.domain.authuser.aggregate.AuthUser;
 import pl.kamann.domain.authuser.vo.AuthUserId;
@@ -8,7 +9,7 @@ import pl.kamann.domain.authuser.vo.Email;
 import pl.kamann.domain.authuser.vo.Password;
 
 @Component
-public class AuthUserPersistenceMapper {
+public class AuthUserPersistenceMapperImpl implements AuthUserPersistenceMapper {
 
     public AuthUser toDomain(AuthUserEntity entity) {
         return AuthUser.restore(

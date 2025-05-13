@@ -12,7 +12,6 @@ import pl.kamann.domain.authuser.aggregate.AuthUser;
 import pl.kamann.domain.authuser.vo.Email;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -40,7 +39,7 @@ public class AppUserRepositoryImpl implements AppUserRepository {
 
     @Override
     public Optional<AppUser> findByAuthUser(AuthUser authUser) {
-        UUID authUserId = authUser.getId().getValue();
+        Long authUserId = authUser.getId().getValue();
         return jpaAppUserRepository.findByAuthUserId(authUserId)
                 .map(mapper::toDomain);
     }
@@ -52,7 +51,7 @@ public class AppUserRepositoryImpl implements AppUserRepository {
     }
 
     @Override
-    public Optional<AppUser> findByIdWithAuth(UUID id) {
+    public Optional<AppUser> findByIdWithAuth(Long id) {
         return jpaAppUserRepository.findByIdWithAuthUser(id)
                 .map(mapper::toDomain);
     }

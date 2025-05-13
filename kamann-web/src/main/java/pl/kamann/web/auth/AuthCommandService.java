@@ -6,13 +6,13 @@ import org.springframework.stereotype.Service;
 import pl.kamann.application.appuser.AppUserDto;
 import pl.kamann.application.authuser.lookup.AppUserFinder;
 import pl.kamann.domain.appuser.aggregate.AppUser;
-import shared.ApiException;
 import pl.kamann.domain.authuser.aggregate.AuthUser;
 import pl.kamann.domain.authuser.port.out.AuthUserRepository;
 import pl.kamann.domain.authuser.service.PasswordHasher;
 import pl.kamann.domain.authuser.vo.AuthCode;
 import pl.kamann.domain.authuser.vo.Email;
 import pl.kamann.domain.security.TokenProvider;
+import shared.ApiException;
 import shared.LoginRequest;
 import shared.LoginResponse;
 
@@ -27,7 +27,6 @@ public class AuthCommandService {
     private final AuthUserRepository authUserRepository;
     private final TokenProvider tokenProvider;
     private final AppUserFinder appUserFinder;
-    private final AuthUserMapper authUserMapper;
     private final PasswordHasher passwordHasher;
 
     public LoginResponse login(String email, String password) {
