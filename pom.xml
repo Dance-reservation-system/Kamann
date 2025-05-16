@@ -25,6 +25,7 @@
 		<module>kamann-infrastructure</module>
 		<module>kamann-web</module>
 		<module>kamann-shared</module>
+		<module>kamann-authmodule</module>
 	</modules>
 
 	<dependencies>
