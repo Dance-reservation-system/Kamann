@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pl.kamann.application.AppUserDto;
-import pl.kamann.application.AuthQueryService;
-import pl.kamann.application.LoginResponse;
+import pl.kamann.application.auth.AuthQueryFacade;
+import pl.kamann.application.auth.command.AppUserDto;
+import pl.kamann.application.auth.command.LoginResponse;
 
 
 @RestController
@@ -19,20 +19,18 @@ import pl.kamann.application.LoginResponse;
 @RequiredArgsConstructor
 class AuthQueryController {
 
-    private final AuthQueryService authQueries;
+    private final AuthQueryFacade authFacade;
 
     @PostMapping("/refresh-token")
     public ResponseEntity<LoginResponse> refresh(
             @CookieValue("refresh_token") String refreshToken,
             HttpServletResponse response
     ) {
-        return ResponseEntity.ok(
-                authQueries.refreshToken(refreshToken, response)
-        );
+        return ResponseEntity.ok(authFacade.refreshToken(refreshToken, response));
     }
 
     @GetMapping("/me")
     public ResponseEntity<AppUserDto> me(HttpServletRequest request) {
-        return ResponseEntity.ok(authQueries.getCurrentUser(request));
+        return ResponseEntity.ok(authFacade.getCurrentUser(request));
     }
 }

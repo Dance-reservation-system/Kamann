@@ -3,73 +3,56 @@ package pl.kamann.web;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pl.kamann.application.AppUserDto;
-import pl.kamann.application.AuthCommandService;
-import pl.kamann.application.LoginRequest;
-import pl.kamann.application.LoginResponse;
-import pl.kamann.application.RegisterClientCommand;
-import pl.kamann.application.RegisterRequest;
-import pl.kamann.application.ResetPasswordRequest;
+import pl.kamann.application.auth.AuthCommandFacade;
+import pl.kamann.application.auth.command.AppUserDto;
+import pl.kamann.application.auth.command.LoginRequest;
+import pl.kamann.application.auth.command.LoginResponse;
+import pl.kamann.application.auth.command.RegisterCustomerRequest;
+import pl.kamann.application.auth.command.RegisterInstructorRequest;
+import pl.kamann.application.auth.command.ResetPasswordRequest;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 class AuthCommandController {
 
-    private final AuthCommandService authCommands;
+    private final AuthCommandFacade authFacade;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
-            @RequestBody @Valid LoginRequest dto
-    ) {
-        return ResponseEntity.ok(authCommands.login(dto));
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest dto) {
+        return ResponseEntity.ok(authFacade.login(dto));
     }
 
     @PostMapping("/register-customer")
-    public ResponseEntity<AppUserDto> registerCustomer(
-            @RequestBody @Valid RegisterClientCommand dto
-    ) {
-        return ResponseEntity.status(201)
-                .body(authCommands.registerCustomer(dto));
+    public ResponseEntity<AppUserDto> registerCustomer(@RequestBody @Valid RegisterCustomerRequest dto) {
+        return ResponseEntity.status(201).body(authFacade.registerCustomer(dto));
     }
 
     @PostMapping("/register-instructor")
-    public ResponseEntity<AppUserDto> registerInstructor(
-            @RequestBody @Valid RegisterRequest dto
-    ) {
-        return ResponseEntity.status(201)
-                .body(authCommands.registerInstructor(dto));
-    }
-
-    @GetMapping("/confirm")
-    public ResponseEntity<Void> confirm(@RequestParam String token) {
-        authCommands.confirmAccount(token);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<AppUserDto> registerInstructor(@RequestBody @Valid RegisterInstructorRequest dto) {
+        return ResponseEntity.status(201).body(authFacade.registerInstructor(dto));
     }
 
     @PostMapping("/request-password-reset")
     public ResponseEntity<Void> requestReset(@RequestParam String email) {
-        authCommands.requestPasswordReset(email);
+        authFacade.requestPasswordReset(email);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(
-            @RequestBody @Valid ResetPasswordRequest dto
-    ) {
-        authCommands.resetPassword(dto);
+    public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest dto) {
+        authFacade.resetPassword(dto);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/delete-request")
     public ResponseEntity<Void> requestDeletion(@RequestParam String email) {
-        authCommands.requestAccountDeletion(email);
+        authFacade.requestAccountDeletion(email);
         return ResponseEntity.ok().build();
     }
 }

@@ -7,10 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "pl.kamann.application",
         "pl.kamann.domain",
         "pl.kamann.infrastructure",
-        "pl.kamann.security",
+        "pl.kamann.infrastructure.security",
         "pl.kamann.web"
 })
-public class AuthModuleApplication {
+class AuthModuleApplication {
     public static void main(String[] args) {
         SpringApplication.run(AuthModuleApplication.class, args);
     }

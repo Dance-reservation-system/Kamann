@@ -180,7 +180,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>pl.kamann.AuthModuleApplication</mainClass> <!-- Adjust if needed -->
+                    <mainClass>pl.kamann.AuthModuleApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
