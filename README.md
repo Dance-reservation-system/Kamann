@@ -1,3 +1,12 @@
+# 🚫 Deprecated
+
+### This repository contains an outdated version of the Reservation System.
+ The latest version is now available here:
+[Reservation System V2](https://github.com/Dance-reservation-system/Reservation-system)
+
+ Please refer to the new repository for current development and updates.
+
+
 # 💃 Dance Studio Reservation System - Backend
 
 A modern reservation system built with **Java 21** and **Spring Boot 3**, featuring role-based access control, membership management, and class scheduling.
