@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableCaching
 @EnableScheduling
-public class KamannApplication {
+class KamannApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(KamannApplication.class, args);
