@@ -31,8 +31,6 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.factory.UserFactory;
 
-import java.time.LocalDateTime;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -62,6 +60,8 @@ public class AuthService {
             );
 
             AuthUser authUser = (AuthUser) authentication.getPrincipal();
+
+            validationService.throwIfMissingLoginProvider(authUser, LoginProvider.LOCAL);
 
             if (authUser.getStatus() == AuthUserStatus.PENDING_DELETION) {
                 scheduledTaskService.cancelTask(authUser.getEmail());
@@ -141,8 +141,8 @@ public class AuthService {
         validationService.validateEmailNotTaken(request.email());
         Role role = roleLookupService.findRoleByName(roleCode);
 
-        AppUser appUser = userFactory.createAppUser(request);
-        AuthUser authUser = userFactory.createAndLinkAuthWithApp(request, role, appUser);
+        AuthUser authUser = userFactory.createAuthUserWithPasswordAndLinkToAppUser(request, role);
+        AppUser appUser = authUser.getAppUser();
 
         authUserRepository.save(authUser);
         AppUser savedAppUser = appUserRepository.save(appUser);

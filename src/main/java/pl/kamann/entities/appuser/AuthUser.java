@@ -8,7 +8,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,8 +28,16 @@ public class AuthUser implements UserDetails, Serializable {
     @Email
     private String email;
 
-    @Column(nullable = false)
+    @Column
     private String password;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "auth_user_login_providers",
+            joinColumns = @JoinColumn(name = "auth_user_id")
+    )
+    @Enumerated(EnumType.STRING)
+    private Set<LoginProvider> loginProviders;
 
     private boolean enabled = false;
 

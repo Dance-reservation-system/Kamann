@@ -1,15 +1,13 @@
 package pl.kamann.config.exception.services;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AuthUser;
-import pl.kamann.entities.appuser.AuthUserStatus;
-import pl.kamann.entities.appuser.RefreshToken;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.repositories.AuthUserRepository;
 
 import java.time.LocalDateTime;
@@ -40,10 +38,10 @@ public class ValidationService {
 
     public void validateAuthUser(AuthUser authUser) {
         if (authUser == null) {
-           throw new ApiException(
-                   "AuthUser not found",
-                   HttpStatus.NOT_FOUND,
-                   StatusCodes.NO_RESULTS.name());
+            throw new ApiException(
+                    "AuthUser not found",
+                    HttpStatus.NOT_FOUND,
+                    StatusCodes.NO_RESULTS.name());
         }
     }
 
@@ -76,7 +74,7 @@ public class ValidationService {
     }
 
     public void validateRefreshToken(String refreshToken) {
-        if(refreshToken == null) {
+        if (refreshToken == null) {
             throw new ApiException("Refresh token not provided",
                     HttpStatus.BAD_REQUEST,
                     AuthCodes.INVALID_TOKEN.name());
@@ -84,10 +82,28 @@ public class ValidationService {
     }
 
     public void isRefreshTokenExpired(RefreshToken token) {
-        if(token.getExpirationTime().isBefore(LocalDateTime.now())) {
+        if (token.getExpirationTime().isBefore(LocalDateTime.now())) {
             throw new ApiException("Refresh token expired",
                     HttpStatus.UNAUTHORIZED,
                     AuthCodes.INVALID_TOKEN.name());
+        }
+    }
+
+    public void throwIfMissingLoginProvider(AuthUser authUser, LoginProvider expectedProvider) {
+        if (!authUser.getLoginProviders().contains(expectedProvider)) {
+            throw new ApiException("Login provider is not supported for this request.",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.INVALID_LOGIN_PROVIDER.name());
+        }
+    }
+
+    public void isSessionHasRole(HttpServletRequest request) {
+        if(request.getSession().getAttribute("role") == null){
+            throw new ApiException(
+                    "User not exists. Role not found in request",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.USER_NOT_FOUND.getCode()
+            );
         }
     }
 }

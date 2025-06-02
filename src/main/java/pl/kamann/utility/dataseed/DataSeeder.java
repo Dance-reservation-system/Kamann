@@ -7,17 +7,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.exception.services.UserLookupService;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AuthUser;
-import pl.kamann.entities.appuser.AuthUserStatus;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
-import pl.kamann.entities.event.Event;
-import pl.kamann.entities.event.EventDifficulty;
-import pl.kamann.entities.event.EventStatus;
-import pl.kamann.entities.event.EventType;
-import pl.kamann.entities.event.OccurrenceEvent;
+import pl.kamann.entities.event.*;
 import pl.kamann.repositories.*;
 import pl.kamann.services.admin.AdminEventService;
 
@@ -72,16 +65,16 @@ public class DataSeeder {
     }
 
     private void createDefaultAdminAndClient() {
-        createUser("studiokamann@gmail.com", "Admin", "Admin", Set.of(adminRole));
-        client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole));
+        createUser("studiokamann@gmail.com", "Admin", "Admin", Set.of(adminRole), Set.of(LoginProvider.LOCAL, LoginProvider.GOOGLE));
+        client = createUser("client1@client.com", "John", "Wick", Set.of(clientRole), Set.of(LoginProvider.LOCAL));
     }
 
     private void createInstructors() {
         List<AppUser> instructors = Arrays.asList(
-                createUser("instructor1@yoga.com", "Jane", "Doe", Set.of(instructorRole)),
-                createUser("instructor2@yoga.com", "John", "Smith", Set.of(instructorRole)),
-                createUser("instructor3@yoga.com", "Mary", "White", Set.of(instructorRole)),
-                createUser("instructor4@yoga.com", "Lucas", "Brown", Set.of(instructorRole))
+                createUser("instructor1@yoga.com", "Jane", "Doe", Set.of(instructorRole), Set.of(LoginProvider.LOCAL)),
+                createUser("instructor2@yoga.com", "John", "Smith", Set.of(instructorRole), Set.of(LoginProvider.LOCAL)),
+                createUser("instructor3@yoga.com", "Mary", "White", Set.of(instructorRole), Set.of(LoginProvider.LOCAL)),
+                createUser("instructor4@yoga.com", "Lucas", "Brown", Set.of(instructorRole), Set.of(LoginProvider.LOCAL))
         );
 
         appUserRepository.saveAll(instructors);
@@ -90,14 +83,15 @@ public class DataSeeder {
     private void createClients() {
         IntStream.range(2, 5)
                 .forEach(i -> {
-                    createUser("client" + i + "@client.com", "Client" + i, "Test", Set.of(clientRole));
+                    createUser("client" + i + "@client.com", "Client" + i, "Test", Set.of(clientRole), Set.of(LoginProvider.LOCAL));
                 });
     }
 
-    private AuthUser createAuthUser(String email, Set<Role> role) {
+    private AuthUser createAuthUser(String email, Set<Role> role, Set<LoginProvider> loginProvider) {
         return authUserRepository.save(AuthUser.builder()
                 .email(email)
                 .password(passwordEncoder.encode("admin"))
+                .loginProviders(loginProvider)
                 .status(AuthUserStatus.ACTIVE)
                 .enabled(true)
                 .roles(role)
@@ -112,8 +106,8 @@ public class DataSeeder {
                 .build());
     }
 
-    private AppUser createUser(String email, String firstName, String lastName, Set<Role> roles) {
-        AuthUser authUser = createAuthUser(email, roles);
+    private AppUser createUser(String email, String firstName, String lastName, Set<Role> roles, Set<LoginProvider> loginProvider) {
+        AuthUser authUser = createAuthUser(email, roles, loginProvider);
         return createAppUser(firstName, lastName, authUser);
     }
 
@@ -140,13 +134,13 @@ public class DataSeeder {
         );
 
         events = List.of(
-            new EventData("Yoga Workshop", "Intensive yoga session", LocalDateTime.now().plusDays(1), 120, 15, eventTypes.get("Yoga"), null, EventDifficulty.ADVANCED),
-            new EventData("Dance Workshop", "Intensive dance session", LocalDateTime.now().plusDays(1).withHour(17).withMinute(0), 90, 20, eventTypes.get("Dance"), null, EventDifficulty.INTERMEDIATE),
-            new EventData("Morning Tango", "Relaxing Tango session", LocalDateTime.now().minusDays(8).withHour(19).withMinute(0), 90, 25, eventTypes.get("Dance"), null, EventDifficulty.BEGINNER),
-            new EventData("Pole Dance Workshop", "Try this", LocalDateTime.now().minusDays(10).withHour(17).withMinute(0), 100, 30, eventTypes.get("PoleDance"), null, EventDifficulty.ADVANCED),
-            new EventData("Evening Yoga", "Relaxing yoga session", LocalDateTime.now().minusDays(5).withHour(16).withMinute(0), 100, 30, eventTypes.get("Yoga"), null, EventDifficulty.INTERMEDIATE),
-            new EventData("Morning Yoga", "Daily morning yoga sessions", LocalDateTime.now().plusDays(2).withHour(7).withMinute(0), 60, 20, eventTypes.get("Yoga"), "FREQ=WEEKLY;BYDAY=MO,WE,FR;INTERVAL=1;COUNT=12", EventDifficulty.ADVANCED),
-            new EventData("Evening Pole Dance", "Weekly pole dance classes", LocalDateTime.now().plusDays(3).withHour(19).withMinute(0), 75, 12, eventTypes.get("PoleDance"), "FREQ=WEEKLY;BYDAY=TU,TH;INTERVAL=1;COUNT=10", EventDifficulty.BEGINNER)
+                new EventData("Yoga Workshop", "Intensive yoga session", LocalDateTime.now().plusDays(1), 120, 15, eventTypes.get("Yoga"), null, EventDifficulty.ADVANCED),
+                new EventData("Dance Workshop", "Intensive dance session", LocalDateTime.now().plusDays(1).withHour(17).withMinute(0), 90, 20, eventTypes.get("Dance"), null, EventDifficulty.INTERMEDIATE),
+                new EventData("Morning Tango", "Relaxing Tango session", LocalDateTime.now().minusDays(8).withHour(19).withMinute(0), 90, 25, eventTypes.get("Dance"), null, EventDifficulty.BEGINNER),
+                new EventData("Pole Dance Workshop", "Try this", LocalDateTime.now().minusDays(10).withHour(17).withMinute(0), 100, 30, eventTypes.get("PoleDance"), null, EventDifficulty.ADVANCED),
+                new EventData("Evening Yoga", "Relaxing yoga session", LocalDateTime.now().minusDays(5).withHour(16).withMinute(0), 100, 30, eventTypes.get("Yoga"), null, EventDifficulty.INTERMEDIATE),
+                new EventData("Morning Yoga", "Daily morning yoga sessions", LocalDateTime.now().plusDays(2).withHour(7).withMinute(0), 60, 20, eventTypes.get("Yoga"), "FREQ=WEEKLY;BYDAY=MO,WE,FR;INTERVAL=1;COUNT=12", EventDifficulty.ADVANCED),
+                new EventData("Evening Pole Dance", "Weekly pole dance classes", LocalDateTime.now().plusDays(3).withHour(19).withMinute(0), 75, 12, eventTypes.get("PoleDance"), "FREQ=WEEKLY;BYDAY=TU,TH;INTERVAL=1;COUNT=10", EventDifficulty.BEGINNER)
         );
 
         events.forEach(event -> {
