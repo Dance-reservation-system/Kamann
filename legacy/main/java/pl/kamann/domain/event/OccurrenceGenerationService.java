@@ -1,0 +1,55 @@
+package pl.kamann.domain.event;
+
+import lombok.RequiredArgsConstructor;
+import org.dmfs.rfc5545.DateTime;
+import org.dmfs.rfc5545.recur.RecurrenceRule;
+import org.dmfs.rfc5545.recur.RecurrenceRuleIterator;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import pl.kamann.domain.event.exceptions.EventCodes;
+import pl.kamann.domain.event.model.Event;
+import pl.kamann.domain.event.model.OccurrenceEvent;
+import pl.kamann.infrastructure.handler.ApiException;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class OccurrenceGenerationService {
+
+    public List<OccurrenceEvent> generateOccurrences(Event event) {
+        List<OccurrenceEvent> occurrences = new ArrayList<>();
+
+        if (event.getRrule() == null || event.getRrule().isEmpty()) {
+            occurrences.add(OccurrenceEvent.create(event, event.getStart(), event.getCreatedBy()));
+            return occurrences;
+        }
+
+        try {
+            RecurrenceRule rule = new RecurrenceRule(event.getRrule());
+            DateTime start = new DateTime(event.getStart().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            RecurrenceRuleIterator iterator = rule.iterator(start);
+
+            int max = 25;
+            int seriesIndex = 1;
+            while (iterator.hasNext() && max-- > 0) {
+                LocalDateTime startTime = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(iterator.nextDateTime().getTimestamp()),
+                        ZoneId.systemDefault()
+                );
+                OccurrenceEvent occ = OccurrenceEvent.create(event, startTime, event.getCreatedBy());
+                occ.setSeriesIndex(seriesIndex++);
+                occurrences.add(occ);
+            }
+
+        } catch (Exception e) {
+            throw new ApiException("Failed to generate occurrences: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, EventCodes.OCCURRENCE_GENERATION_FAILED.name());
+        }
+
+        return occurrences;
+    }
+}

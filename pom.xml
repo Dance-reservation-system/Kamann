@@ -17,7 +17,16 @@
 	<properties>
 		<java.version>21</java.version>
 	</properties>
-	<packaging>jar</packaging>
+	<packaging>pom</packaging>
+
+	<modules>
+		<module>kamann-domain</module>
+		<module>kamann-application</module>
+		<module>kamann-infrastructure</module>
+		<module>kamann-web</module>
+		<module>kamann-shared</module>
+		<module>kamann-authmodule</module>
+	</modules>
 
 	<dependencies>
 		<!-- Spring Boot Starters -->
@@ -151,11 +160,11 @@
 		</dependency>
 
 		<!-- MapStruct -->
-		<dependency>
-			<groupId>org.mapstruct</groupId>
-			<artifactId>mapstruct</artifactId>
-			<version>1.5.5.Final</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.mapstruct</groupId>-->
+<!--			<artifactId>mapstruct</artifactId>-->
+<!--			<version>1.5.5.Final</version>-->
+<!--		</dependency>-->
 
 		<!-- Redis -->
 		<dependency>
@@ -184,11 +193,11 @@
 							<artifactId>lombok</artifactId>
 							<version>1.18.34</version>
 						</path>
-						<path>
-							<groupId>org.mapstruct</groupId>
-							<artifactId>mapstruct-processor</artifactId>
-							<version>1.5.5.Final</version>
-						</path>
+<!--						<path>-->
+<!--							<groupId>org.mapstruct</groupId>-->
+<!--							<artifactId>mapstruct-processor</artifactId>-->
+<!--							<version>1.5.5.Final</version>-->
+<!--						</path>-->
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
