@@ -11,21 +11,24 @@ import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
+import pl.kamann.dtos.UserDetailsDto;
 import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.services.AppUserService;
 import pl.kamann.services.AuthService;
+import pl.kamann.services.admin.AdminUserService;
 
 @RestController
-@RequestMapping("/api/v1/admin/users")
+@RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 @Slf4j
 public class AdminUserController {
 
     private final AppUserService appUserService;
     private final AuthService authService;
+    private final AdminUserService adminUserService;
 
 
-    @GetMapping
+    @GetMapping("/users")
     @Operation(
             summary = "Get all users with pagination",
             description = "Retrieve a paginated list of all users in the system filtered by role."
@@ -37,7 +40,7 @@ public class AdminUserController {
         return ResponseEntity.ok(appUserService.getUsers(pageable, role));
     }
 
-    @GetMapping("/logged")
+    @GetMapping("/users/logged")
     @Operation(
             summary = "Get details of logged in user.",
             description = "Retrieve an AppUserDto of currently logged in AppUser."
@@ -46,8 +49,26 @@ public class AdminUserController {
         return ResponseEntity.ok(authService.getLoggedInAppUser(request));
     }
 
+    @GetMapping("/clients/{clientId}/profile")
+    @Operation(
+            summary = "Get client details.",
+            description = "Retrieve an UserDetailsDto of client founded by ID."
+    )
+    public ResponseEntity<UserDetailsDto> getClientDetailsById(@PathVariable Long clientId) {
+        return ResponseEntity.ok(adminUserService.getClientByID(clientId));
+    }
 
-    @PutMapping("/activate/{userId}")
+    @GetMapping("/clients/{instructorId}/profile")
+    @Operation(
+            summary = "Get instructor details.",
+            description = "Retrieve an UserDetailsDto of instructor founded by ID."
+    )
+    public ResponseEntity<UserDetailsDto> getInstructorDetailsById(@PathVariable Long instructorId) {
+        return ResponseEntity.ok(adminUserService.getInstructorByID(instructorId));
+    }
+
+
+    @PutMapping("/users/activate/{userId}")
     @Operation(
             summary = "Activate a user account",
             description = "Activate a user account by setting its status to ACTIVE. This endpoint requires the user's ID."
@@ -57,7 +78,7 @@ public class AdminUserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/deactivate/{userId}")
+    @PutMapping("/users/deactivate/{userId}")
     @Operation(
             summary = "Deactivate a user account",
             description = "Deactivate a user account by setting its status to INACTIVE. This endpoint requires the user's ID."
@@ -67,7 +88,7 @@ public class AdminUserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{userId}/status")
+    @PutMapping("/users/{userId}/status")
     @Operation(
             summary = "Change the status of a user",
             description = "Change the status of a user to ACTIVE, INACTIVE, or any other supported status. The new status is provided as a query parameter."
