@@ -3,13 +3,14 @@ package pl.kamann.dtos.event;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 import pl.kamann.entities.event.EventDifficulty;
-import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.SchedulingStatus;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Builder
 public record EventDto(
+
         Long id,
 
         @NotBlank(message = "Title cannot be blank")
@@ -17,8 +18,8 @@ public record EventDto(
 
         String description,
 
-        @NotNull(message = "Start date/time cannot be null")
-        @Future(message = "Start date/time must be in the future")
+        @NotNull(message = "Start meetingDate/time cannot be null")
+        @Future(message = "Start meetingDate/time must be in the future")
         LocalDateTime start,
 
         @NotNull(message = "Duration in minutes cannot be null")
@@ -40,7 +41,7 @@ public record EventDto(
         Integer maxParticipants,
 
         @NotNull(message = "Event status cannot be null")
-        EventStatus status,
+        SchedulingStatus status,
 
         @PositiveOrZero(message = "Current participants must be zero or a positive number")
         int currentParticipants,

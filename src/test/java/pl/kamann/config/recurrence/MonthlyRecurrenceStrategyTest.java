@@ -12,7 +12,7 @@ class MonthlyRecurrenceStrategyTest {
         RecurrenceStrategy strategy = new MonthlyRecurrenceStrategy();
         LocalDateTime eventStart = LocalDateTime.of(2025, 1, 1, 9, 0);
         Event event = new Event();
-        event.setStart(eventStart);
+        event.setReleaseDate(eventStart);
         LocalDateTime until = LocalDateTime.of(2025, 4, 1, 9, 0);
         List<LocalDateTime> occurrences = strategy.generateOccurrences(event, until);
         assertEquals(4, occurrences.size());

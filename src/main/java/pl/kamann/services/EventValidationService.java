@@ -12,7 +12,7 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.event.EventUpdateRequest;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.entities.event.Event;
-import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.SchedulingStatus;
 
 import java.time.LocalDateTime;
 
@@ -32,16 +32,16 @@ public class EventValidationService {
         validateStatus(event);
         validateTitle(requestDto.title());
         validateDescription(requestDto.description());
-        validateStart(requestDto.start(), event.getStart());
+        validateStart(requestDto.start(), event.getReleaseDate());
         validateDuration(requestDto.durationMinutes());
         validateMaxParticipants(requestDto.maxParticipants());
     }
 
     private static void validateStatus(Event event) {
-        if (event.getStatus() == EventStatus.CANCELED) {
-            throw new ApiException("Cannot update a cancelled event.",
+        if (event.getSchedulingStatus() == SchedulingStatus.COMPLETED) {
+            throw new ApiException("Cannot update completed event.",
                     HttpStatus.BAD_REQUEST,
-                    EventCodes.EVENT_ALREADY_CANCELLED.name());
+                    EventCodes.EVENT_ALREADY_COMPLETED.name());
         }
     }
 
@@ -63,7 +63,7 @@ public class EventValidationService {
 
     private void validateRequiredFields(LocalDateTime start, Integer durationMinutes) {
         if (start == null) {
-            throw new ApiException("Start date/time is required.",
+            throw new ApiException("Start meetingDate/time is required.",
                     HttpStatus.BAD_REQUEST,
                     RecurrenceCodes.START_DATE_REQUIRED.name());
         }
@@ -120,7 +120,7 @@ public class EventValidationService {
             if (rule.getUntil() != null) {
                 DateTime untilDateTime = rule.getUntil();
                 if (untilDateTime.getTimestamp() < start.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()) {
-                    throw new ApiException("RRULE UNTIL date cannot be before start date.",
+                    throw new ApiException("RRULE UNTIL meetingDate cannot be before start meetingDate.",
                             HttpStatus.BAD_REQUEST,
                             RecurrenceCodes.INVALID_UNTIL_DATE.name());
                 }
@@ -129,7 +129,7 @@ public class EventValidationService {
                         untilDateTime.getTimestamp() / 1000, 0, java.time.ZoneOffset.UTC);
                 LocalDateTime maxAllowedUntil = start.plusMonths(2);
                 if (untilLocalDate.isAfter(maxAllowedUntil)) {
-                    throw new ApiException("RRULE UNTIL date cannot be more than 2 months after the event start.",
+                    throw new ApiException("RRULE UNTIL meetingDate cannot be more than 2 months after the event start.",
                             HttpStatus.BAD_REQUEST,
                             RecurrenceCodes.INVALID_UNTIL_DATE.name());
                 }

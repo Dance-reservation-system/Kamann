@@ -20,9 +20,9 @@ public record CreateEventRequest(
         @Schema(description = "Optional description of the event", example = "A beginner-level salsa class")
         String description,
 
-        @NotNull(message = "Start date/time cannot be null")
-        @Future(message = "Start date/time must be in the future")
-        @Schema(description = "Start date and time of the event (must be in the future)", example = "2025-02-09T16:14:01")
+        @NotNull(message = "Start meetingDate/time cannot be null")
+        @Future(message = "Start meetingDate/time must be in the future")
+        @Schema(description = "Start meetingDate and time of the event (must be in the future)", example = "2025-02-09T16:14:01")
         LocalDateTime start,
 
         @NotNull(message = "Duration in minutes cannot be null")

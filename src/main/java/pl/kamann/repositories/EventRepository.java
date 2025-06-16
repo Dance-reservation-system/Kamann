@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
-    List<Event> findByRruleIsNotNullAndStartAfter(LocalDateTime startDate);
+    List<Event> findByRruleIsNotNullAndReleaseDateAfter(LocalDateTime releaseDate);
 
     Optional<Event> findByTitle(String title);
 

@@ -80,14 +80,14 @@ public class ClientAttendanceService {
 
     public AttendanceStatus determineCancellationStatus(OccurrenceEvent occurrenceEvent) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime cancellationDeadline = occurrenceEvent.getStart().minusHours(24);
+        LocalDateTime cancellationDeadline = occurrenceEvent.getMeetingDate().minusHours(24);
         return now.isBefore(cancellationDeadline)
                 ? AttendanceStatus.EARLY_CANCEL
                 : AttendanceStatus.LATE_CANCEL;
     }
 
     public void validateCancellation(OccurrenceEvent occurrenceEvent) {
-        if (occurrenceEvent.getStart().isBefore(LocalDateTime.now())) {
+        if (occurrenceEvent.getMeetingDate().isBefore(LocalDateTime.now())) {
             throw new ApiException(
                     "Cannot cancel an occurrence that has already started",
                     HttpStatus.BAD_REQUEST,

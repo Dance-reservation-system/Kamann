@@ -1,8 +1,6 @@
 package pl.kamann.entities.event;
 
-public enum EventStatus {
+public enum SchedulingStatus {
     SCHEDULED,
-    CANCELED,
-    UPCOMING,
     COMPLETED
 }

@@ -22,7 +22,8 @@ import pl.kamann.config.pagination.PaginationService;
 import pl.kamann.config.pagination.PaginationUtil;
 import pl.kamann.dtos.event.*;
 import pl.kamann.entities.event.Event;
-import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.OccurrenceEventStatus;
+import pl.kamann.entities.event.SchedulingStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
@@ -114,24 +115,25 @@ public class AdminEventService {
 
     @Transactional
     @CacheEvict(value = {"events", "eventsLight", "occurrences", "occurrencesLight"}, allEntries = true)
-    public void cancelEvent(Long id, EventStatus eventStatus) {
+    public void cancelEvent(Long id, SchedulingStatus schedulingStatus) {
         Event event = eventLookupService.findEventById(id);
         LocalDateTime now = LocalDateTime.now();
 
-        if (event.getStatus() == EventStatus.CANCELED) {
+        if (event.getSchedulingStatus() == SchedulingStatus.COMPLETED) {
             throw new ApiException("Event is already canceled.",
                     HttpStatus.BAD_REQUEST,
                     EventCodes.EVENT_ALREADY_CANCELED.name());
         }
 
-        event.setStatus(eventStatus);
+        event.setSchedulingStatus(schedulingStatus);
         event.setUpdatedAt(LocalDateTime.now());
 
-        List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findByEventAndStartAfter(event, now);
+        List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findByEventAndMeetingDateAfter(event, now);
         futureOccurrences.forEach(occ -> {
-            occ.setCanceled(true);
-            occ.setEventStatus(eventStatus);
+            occ.setOccurrenceEventStatus(OccurrenceEventStatus.CANCELED);
         });
+
+        event.setSchedulingStatus(SchedulingStatus.COMPLETED);
 
         eventRepository.save(event);
         occurrenceEventRepository.saveAll(futureOccurrences);
@@ -142,7 +144,7 @@ public class AdminEventService {
     private void updateEventFields(Event event, EventUpdateRequest requestDto) {
         event.setTitle(requestDto.title());
         event.setDescription(requestDto.description());
-        event.setStart(requestDto.start());
+        event.setReleaseDate(requestDto.start());
         event.setDurationMinutes(requestDto.durationMinutes());
         event.setRrule(requestDto.rrule());
         event.setMaxParticipants(requestDto.maxParticipants());
@@ -154,14 +156,14 @@ public class AdminEventService {
 
         // If no RRULE is provided, create a single occurrence (one-time event)
         if (event.getRrule() == null || event.getRrule().isEmpty()) {
-            occurrences.add(createOccurrence(event, event.getStart(), 0));
+            occurrences.add(createOccurrence(event, event.getReleaseDate(), 0));
             return occurrences;
         }
 
         try {
             RecurrenceRule rule = new RecurrenceRule(event.getRrule());
             DateTime dtStart = new DateTime(
-                    event.getStart().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    event.getReleaseDate().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
             );
             RecurrenceRuleIterator iterator = rule.iterator(dtStart);
 
@@ -190,12 +192,11 @@ public class AdminEventService {
     private OccurrenceEvent createOccurrence(Event event, LocalDateTime start, int seriesIndex) {
         return OccurrenceEvent.builder()
                 .event(event)
-                .start(start)
+                .meetingDate(start)
                 .createdBy(event.getCreatedBy())
-                .durationMinutes(event.getDurationMinutes())
-                .maxParticipants(event.getMaxParticipants())
                 .instructor(event.getInstructor())
                 .seriesIndex(seriesIndex)
+                .occurrenceEventStatus(OccurrenceEventStatus.UPCOMING)
                 .build();
     }
 
